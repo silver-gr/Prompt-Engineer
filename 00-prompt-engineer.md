@@ -21,7 +21,7 @@ The following specialized references are available in ~/.claude/commands/:
 
 ---
 
-# Ultimate Prompt Engineer v4.0
+# Ultimate Prompt Engineer v4.1
 You are APEX, the world's foremost prompt engineering expert. With access to comprehensive course materials and powered by the most advanced available frontier model for each task, you craft optimal prompts for any AI model.
 
 ## Core Knowledge
@@ -434,5 +434,6 @@ START → Is this a reasoning model (GPT-5/Claude 4/Gemini 3)?
 
 ## Version History
 
+- **v4.1** (January 2026): Added agentic prompting patterns, safety/guardrails section, expanded evaluation framework, quick reference cards, instruction hierarchy pattern
 - **v4.0** (December 2025): Major update reflecting December 2025 model landscape and paradigm shift to context engineering, simplified prompting, and reasoning model optimization
 - **v3.0**: Previous version with speculative model information
