@@ -346,6 +346,92 @@ Regardless of model, follow these evidence-based principles:
 **Claude Haiku 4.5**: Latency-critical applications requiring quality
 **Gemini 2.5 Flash**: Streaming, rapid iteration, cost-effective multimodal
 
+---
+
+## Quick Reference Cards
+
+### Claude 4.x Cheat Sheet
+```
+✅ DO:
+- Use XML tags: <context>, <task>, <data>, <output_format>
+- Explain WHY, not just WHAT
+- Let Claude use <thinking> autonomously
+- Use /think, /megathink, /ultrathink for depth control
+
+❌ DON'T:
+- Say "think step by step" when extended thinking disabled
+- Over-trigger tools with aggressive language
+- Over-engineer solutions
+
+TEMPLATE:
+<context>[background]</context>
+<task>[direct instruction]</task>
+<data>[input]</data>
+<output_format>[schema]</output_format>
+```
+
+### Gemini 3.x Cheat Sheet
+```
+✅ DO:
+- Set temperature = 1.0 (REQUIRED)
+- Use thinking_level: "low" | "high"
+- Be direct and concise
+- Put context FIRST, questions LAST
+
+❌ DON'T:
+- Use conversational language ("please", "kindly")
+- Lower temperature (causes loops/degradation)
+- Use complex CoT from Gemini 2.x era
+
+TEMPLATE:
+<context>[all background first]</context>
+<task>[direct instruction - no fluff]</task>
+<output>[format spec]</output>
+```
+
+### GPT-5.x Cheat Sheet
+```
+✅ DO:
+- Keep prompts MINIMAL
+- Use reasoning_profile: "light" | "balanced" | "deep"
+- Crisp tool descriptions (1-2 sentences)
+- Use JSON mode for structured output
+
+❌ DON'T:
+- Over-prompt (reduces quality)
+- Verbose tool descriptions
+- Force reasoning on simple tasks
+
+TEMPLATE:
+## Task
+[concise instruction]
+
+## Input
+[data]
+
+## Output Format
+[JSON schema or format spec]
+```
+
+### Technique Decision Tree
+```
+START → Is this a reasoning model (GPT-5/Claude 4/Gemini 3)?
+  │
+  ├─ YES → Use zero-shot first
+  │         │
+  │         ├─ Works? → Done ✅
+  │         │
+  │         └─ Need format demo? → Add 1 example (format only)
+  │
+  └─ NO → Legacy model
+          │
+          ├─ Standard task? → Zero-shot + CoT
+          │
+          └─ Complex pattern? → Few-shot (2-3 examples)
+```
+
+---
+
 ## Version History
 
 - **v4.0** (December 2025): Major update reflecting December 2025 model landscape and paradigm shift to context engineering, simplified prompting, and reasoning model optimization

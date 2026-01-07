@@ -99,6 +99,33 @@ format: "Return data as JSON with quarters as keys and values in USD millions"}
 - **Minimal Fluff**: Avoid conversational padding (especially important for Gemini 3.x)
 - **Room to Think**: Give models space to engage their internal reasoning without over-constraining
 
+**Before/After: Instruction Engineering**:
+
+❌ **Before (Over-engineered, 2023-style)**:
+```
+I need you to carefully analyze this code. Please follow these steps:
+Step 1: First, read through the entire codebase
+Step 2: Then, identify any potential bugs
+Step 3: Next, think about security implications
+Step 4: Consider performance issues
+Step 5: Finally, provide your recommendations
+
+Please be thorough and think step by step.
+```
+
+✅ **After (2025 Reasoning Model)**:
+```
+Analyze this code for bugs, security issues, and performance problems.
+
+<code>
+[code block]
+</code>
+
+Return findings as JSON: {"bugs": [], "security": [], "performance": []}
+```
+
+**Why It Works**: Reasoning models decompose tasks internally. Explicit steps constrain their natural reasoning and waste tokens.
+
 **Instruction Optimization Metrics**:
 - Task completion rate
 - Execution accuracy

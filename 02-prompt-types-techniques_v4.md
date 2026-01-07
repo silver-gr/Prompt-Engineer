@@ -237,6 +237,46 @@ Review this authentication flow for vulnerabilities.
 }
 ```
 
+**Instruction Hierarchy (Recommended Order)**:
+```
+[System Context] → [Task Instruction] → [Examples] → [Input Data] → [Output Format]
+```
+
+| Component | Purpose | Token Priority |
+|-----------|---------|----------------|
+| System Context | Role, domain expertise, constraints | 5-10% |
+| Task Instruction | Clear, actionable directive | 5-10% |
+| Examples | Format demonstration (1-2 max) | 0-15% |
+| Input Data | Content to process | 40-60% |
+| Output Format | Explicit schema/structure | 5-10% |
+
+**Before/After Example**:
+
+❌ **Before (Unstructured)**:
+```
+Can you please help me analyze this sales data? I need to find trends.
+The data is from Q1-Q4. Thanks! [data dump] I'd like a summary please.
+```
+
+✅ **After (Hierarchical)**:
+```
+<role>Data analyst specializing in sales trends</role>
+
+<task>Identify quarterly revenue trends and anomalies</task>
+
+<data>
+[Q1-Q4 sales data]
+</data>
+
+<output_format>
+{
+  "trends": ["array"],
+  "anomalies": ["array"],
+  "recommendation": "string"
+}
+</output_format>
+```
+
 **2025 Best Practices**:
 - ✅ Clear, direct instructions
 - ✅ Rich context

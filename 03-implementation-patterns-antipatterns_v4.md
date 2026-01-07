@@ -485,6 +485,29 @@ Explain the relationship and implications.
 - Unnecessary preambles
 - Apologetic language
 
+**Conversational Overhead Quantification**:
+
+| Phrase Type | Token Cost | Signal Value | Verdict |
+|-------------|------------|--------------|---------|
+| "Hello! I hope you're doing well" | 8-12 tokens | Zero | ❌ Remove |
+| "Could you please help me" | 5-7 tokens | Zero | ❌ Remove |
+| "Thank you so much!" | 4-5 tokens | Zero | ❌ Remove |
+| "I would really appreciate if" | 6-8 tokens | Zero | ❌ Remove |
+| "When you have a moment" | 5 tokens | Zero (models are instant) | ❌ Remove |
+
+**Impact Analysis**:
+```
+Fluffy prompt:    "Hello! Could you please help me analyze this data? Thanks!"
+Tokens used:      ~15 tokens of pure overhead
+Direct prompt:    "Analyze this data:"
+Tokens saved:     ~12 tokens (80% reduction in instruction overhead)
+```
+
+**Model-Specific Impact**:
+- **Gemini 3.x**: Conversational language actively degrades instruction-following
+- **Claude 4.x**: Tolerates but gains nothing from it
+- **GPT-5.x**: Neutral impact, but wastes tokens
+
 **2025 Example (BAD for Gemini 3.x)**:
 ```
 Hello! I hope you're doing well today. If you could please help me with this task, I would greatly appreciate it. Could you kindly analyze the following data when you have a moment? Thank you so much!
