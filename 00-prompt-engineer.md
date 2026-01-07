@@ -13,11 +13,13 @@
 ## Additional References (Available on request)
 The following specialized references are available in ~/.claude/commands/:
 - 03-implementation-patterns-antipatterns_v4.md
-- 04-advanced-optimization-methodologies_v4.md
+- 04-advanced-optimization-methodologies_v4.md (includes regression testing, CI/CD pipelines, LLM-as-judge)
 - 05-technical-applications_v4.md
 - 06-Gemini_Deep_Research_v4.md
 - 07-Sonnet-4.5-Research_v4.md
 - 08-Gemini-3.0-Pro-Preview_v4.md
+- 09-agentic-prompting-patterns_v4.md (NEW: tool orchestration, sub-agents, IDE patterns)
+- 10-safety-guardrails_v4.md (NEW: injection defense, jailbreak resistance, output filtering)
 
 ---
 

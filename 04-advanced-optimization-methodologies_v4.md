@@ -587,7 +587,340 @@ def distill_prompt_2025(complex_prompt, model, test_cases):
 
 ---
 
-## 10. Best Practices Summary (2025)
+## 10. Prompt Regression Testing (2025 NEW)
+
+**Definition**: Automated testing to ensure prompt changes don't degrade performance.
+
+### 10.1 Regression Test Suite
+
+```python
+class PromptRegressionSuite:
+    def __init__(self, prompt_id, golden_examples):
+        self.prompt_id = prompt_id
+        self.golden_examples = golden_examples  # Known good input/output pairs
+        self.thresholds = {
+            'accuracy': 0.95,      # Must maintain 95% accuracy
+            'consistency': 0.90,   # 90% same output for same input
+            'format_compliance': 1.0  # 100% valid output format
+        }
+
+    def run_regression(self, old_prompt, new_prompt, model):
+        """
+        Test new prompt against golden examples
+        """
+        old_results = self.evaluate(old_prompt, model)
+        new_results = self.evaluate(new_prompt, model)
+
+        regressions = []
+
+        for metric, threshold in self.thresholds.items():
+            if new_results[metric] < old_results[metric] * threshold:
+                regressions.append({
+                    'metric': metric,
+                    'old_value': old_results[metric],
+                    'new_value': new_results[metric],
+                    'threshold': threshold,
+                    'severity': 'critical' if metric == 'accuracy' else 'warning'
+                })
+
+        return {
+            'passed': len(regressions) == 0,
+            'regressions': regressions,
+            'old_results': old_results,
+            'new_results': new_results
+        }
+
+    def evaluate(self, prompt, model):
+        results = {'accuracy': [], 'consistency': [], 'format_compliance': []}
+
+        for example in self.golden_examples:
+            # Run 3 times for consistency check
+            responses = [model.generate(prompt.format(**example['input'])) for _ in range(3)]
+
+            # Accuracy: Does output match expected?
+            accuracy = semantic_similarity(responses[0], example['expected_output'])
+            results['accuracy'].append(accuracy)
+
+            # Consistency: Are all 3 runs similar?
+            consistency = min(semantic_similarity(responses[i], responses[j])
+                            for i in range(3) for j in range(i+1, 3))
+            results['consistency'].append(consistency)
+
+            # Format compliance: Valid JSON/structure?
+            format_ok = all(validate_format(r, example.get('format_spec')) for r in responses)
+            results['format_compliance'].append(1.0 if format_ok else 0.0)
+
+        return {k: sum(v)/len(v) for k, v in results.items()}
+```
+
+### 10.2 Golden Example Management
+
+```python
+# Golden examples structure
+GOLDEN_EXAMPLES = [
+    {
+        "id": "customer_lookup_basic",
+        "input": {"query": "Find customer John Smith"},
+        "expected_output": {"action": "search", "field": "name", "value": "John Smith"},
+        "format_spec": "json",
+        "critical": True  # Must pass for deployment
+    },
+    {
+        "id": "edge_case_empty",
+        "input": {"query": ""},
+        "expected_output": {"error": "empty_query"},
+        "format_spec": "json",
+        "critical": True
+    }
+]
+```
+
+---
+
+## 11. Automated Evaluation Pipelines (2025 NEW)
+
+**Definition**: CI/CD-style automation for prompt testing and deployment.
+
+### 11.1 Pipeline Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PROMPT CI/CD PIPELINE                    │
+├─────────────────────────────────────────────────────────────┤
+│  1. Lint         → Check prompt structure and anti-patterns │
+│  2. Unit Test    → Test against golden examples             │
+│  3. Regression   → Compare against previous version         │
+│  4. A/B Test     → Test zero-shot vs new prompt             │
+│  5. LLM Judge    → Quality assessment by evaluator model    │
+│  6. Deploy       → Promote to production if all pass        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 Pipeline Implementation
+
+```python
+class PromptPipeline:
+    def __init__(self, config):
+        self.config = config
+        self.stages = [
+            ('lint', self.lint_stage),
+            ('unit_test', self.unit_test_stage),
+            ('regression', self.regression_stage),
+            ('ab_test', self.ab_test_stage),
+            ('llm_judge', self.llm_judge_stage),
+        ]
+
+    def run(self, prompt, previous_prompt=None):
+        results = {'prompt': prompt, 'stages': {}}
+
+        for stage_name, stage_func in self.stages:
+            try:
+                stage_result = stage_func(prompt, previous_prompt)
+                results['stages'][stage_name] = stage_result
+
+                if not stage_result['passed']:
+                    results['status'] = 'failed'
+                    results['failed_stage'] = stage_name
+                    return results
+
+            except Exception as e:
+                results['status'] = 'error'
+                results['error'] = str(e)
+                return results
+
+        results['status'] = 'passed'
+        return results
+
+    def lint_stage(self, prompt, _):
+        """Check for anti-patterns"""
+        issues = []
+
+        if detect_cot_instructions(prompt):
+            issues.append('Contains unnecessary CoT instructions')
+        if count_examples(prompt) > 2:
+            issues.append('Excessive examples (>2)')
+        if detect_fluff(prompt):
+            issues.append('Contains conversational fluff')
+        if count_tokens(prompt) > self.config['max_tokens']:
+            issues.append(f'Exceeds token limit ({self.config["max_tokens"]})')
+
+        return {'passed': len(issues) == 0, 'issues': issues}
+```
+
+### 11.3 CI Integration Example
+
+```yaml
+# .github/workflows/prompt-ci.yml
+name: Prompt CI
+on:
+  push:
+    paths:
+      - 'prompts/**'
+
+jobs:
+  test-prompts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Prompts
+        run: python scripts/lint_prompts.py prompts/
+
+      - name: Run Golden Tests
+        run: python scripts/test_prompts.py --golden-set tests/golden.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Regression Check
+        run: python scripts/regression_check.py --baseline main
+
+      - name: LLM Judge Evaluation
+        run: python scripts/llm_judge.py --threshold 0.8
+```
+
+---
+
+## 12. LLM-as-Judge Patterns (2025 NEW)
+
+**Definition**: Using a language model to evaluate outputs from another model or prompt.
+
+### 12.1 Judge Prompt Template
+
+```python
+LLM_JUDGE_PROMPT = """
+You are an expert evaluator assessing AI assistant responses.
+
+<task_description>
+{task_description}
+</task_description>
+
+<input>
+{input}
+</input>
+
+<response_to_evaluate>
+{response}
+</response_to_evaluate>
+
+<evaluation_criteria>
+{criteria}
+</evaluation_criteria>
+
+Rate the response on each criterion from 1-5:
+- 1: Completely fails
+- 2: Major issues
+- 3: Acceptable
+- 4: Good
+- 5: Excellent
+
+Return JSON:
+{
+  "scores": {
+    "criterion_1": <1-5>,
+    "criterion_2": <1-5>,
+    ...
+  },
+  "overall": <1-5>,
+  "reasoning": "Brief explanation",
+  "issues": ["List any specific issues"]
+}
+"""
+```
+
+### 12.2 Evaluation Criteria Sets
+
+```python
+EVALUATION_CRITERIA = {
+    'accuracy': {
+        'factual_correctness': 'Are all facts accurate?',
+        'completeness': 'Does it answer all parts of the question?',
+        'no_hallucination': 'Are there any made-up facts or citations?'
+    },
+    'quality': {
+        'clarity': 'Is the response clear and well-structured?',
+        'relevance': 'Does it stay on topic?',
+        'helpfulness': 'Would this help the user achieve their goal?'
+    },
+    'safety': {
+        'no_harmful_content': 'Is the content safe and appropriate?',
+        'follows_guidelines': 'Does it follow the specified constraints?',
+        'honest': 'Does it acknowledge uncertainty appropriately?'
+    }
+}
+```
+
+### 12.3 Multi-Judge Consensus
+
+```python
+def multi_judge_evaluation(response, task, criteria, judge_models):
+    """
+    Use multiple LLM judges for more robust evaluation
+    """
+    judge_scores = []
+
+    for judge_model in judge_models:
+        prompt = LLM_JUDGE_PROMPT.format(
+            task_description=task,
+            input=response['input'],
+            response=response['output'],
+            criteria=format_criteria(criteria)
+        )
+
+        judgment = judge_model.generate(prompt, temperature=0.3)
+        judge_scores.append(parse_judgment(judgment))
+
+    # Consensus: Average scores, flag high variance
+    consensus = {}
+    for criterion in criteria:
+        scores = [j['scores'][criterion] for j in judge_scores]
+        consensus[criterion] = {
+            'mean': sum(scores) / len(scores),
+            'variance': variance(scores),
+            'agreement': max(scores) - min(scores) <= 1
+        }
+
+    return {
+        'consensus': consensus,
+        'individual_judgments': judge_scores,
+        'high_agreement': all(c['agreement'] for c in consensus.values())
+    }
+```
+
+### 12.4 Judge Calibration
+
+**Problem**: LLM judges can be biased (e.g., prefer verbose responses).
+
+**Solution**: Calibrate with known examples.
+
+```python
+def calibrate_judge(judge_model, calibration_set):
+    """
+    Calibration set: responses with known ground-truth scores
+    """
+    predictions = []
+    actuals = []
+
+    for item in calibration_set:
+        judgment = run_judge(judge_model, item['response'], item['task'])
+        predictions.append(judgment['overall'])
+        actuals.append(item['ground_truth_score'])
+
+    # Calculate correlation
+    correlation = pearson_correlation(predictions, actuals)
+
+    # Calculate bias (does judge consistently over/under rate?)
+    bias = sum(predictions) / len(predictions) - sum(actuals) / len(actuals)
+
+    return {
+        'correlation': correlation,
+        'bias': bias,
+        'reliable': correlation > 0.7 and abs(bias) < 0.5
+    }
+```
+
+---
+
+## 13. Best Practices Summary (2025)
 
 **Development Workflow**:
 1. ✅ Start with zero-shot minimal prompt
