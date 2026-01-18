@@ -46,6 +46,26 @@ All notable changes to the Prompt Engineering Knowledge Base are documented in t
   - General solution patterns (anti-hardcoding)
   - Tool triggering guidance
 
+- **08-Gemini-3.0-Pro-Preview_v4.md** - Official Google Guidelines (January 2026)
+  - Constraint organization (critical: constraints LAST or dropped)
+  - Split-step verification for unfamiliar topics
+  - Explicit context grounding patterns
+  - Output verbosity control (default = concise)
+  - Thinking level for latency optimization
+  - Persona usage caution
+  - Few-shot examples (Google recommends 2-3)
+  - Response prefixes for format anchoring
+  - Self-critique pattern
+  - Distinguishing deduction from external knowledge
+  - Added official Google documentation references
+
+- **00-prompt-engineer.md** - Expanded Gemini 3.x Cheat Sheet
+  - Constraint order warning (critical pattern)
+  - Few-shot recommendation
+  - Anchor transitions
+  - Verbosity control
+  - Updated template with constraints placement
+
 ### Changed
 - Version bumped from 4.1 to 4.2
 - Updated module references to include 11-Claude-4.x-Best-Practices_v4.md

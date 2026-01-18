@@ -392,20 +392,34 @@ TEMPLATE:
 ### Gemini 3.x Cheat Sheet
 ```
 ✅ DO:
-- Set temperature = 1.0 (REQUIRED)
+- Set temperature = 1.0 (REQUIRED - lower causes loops!)
 - Use thinking_level: "low" | "high"
 - Be direct and concise
 - Put context FIRST, questions LAST
+- Put CONSTRAINTS at END (critical - they get dropped if early!)
+- Use 2-3 few-shot examples with consistent formatting
+- Anchor transitions: "Based on the above..."
 
 ❌ DON'T:
-- Use conversational language ("please", "kindly")
 - Lower temperature (causes loops/degradation)
+- Put negative/formatting constraints BEFORE context
+- Use conversational language ("please", "kindly")
 - Use complex CoT from Gemini 2.x era
+- Use broad "do not infer" (be specific instead)
+
+CONSTRAINT ORDER (CRITICAL):
+1. Context/source material
+2. Main task
+3. Constraints LAST (or they're dropped!)
+
+VERBOSITY: Default = concise
+- More verbose: "Explain as friendly, talkative assistant"
+- Faster: thinking_level=LOW + "Think silently"
 
 TEMPLATE:
 <context>[all background first]</context>
 <task>[direct instruction - no fluff]</task>
-<output>[format spec]</output>
+<constraints>[negative/formatting limits LAST]</constraints>
 ```
 
 ### GPT-5.x Cheat Sheet

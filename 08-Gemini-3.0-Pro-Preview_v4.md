@@ -27,8 +27,9 @@ Gemini 3.0 Pro (officially released November 2025) is Google's most advanced rea
 
 ### 4. Keep Temperature at 1.0
 - **Critical:** Gemini 3 is calibrated for `temperature = 1.0` (default). Do NOT change this unless you have a specific reason.
-- **Why:** The model's reasoning and instruction-following are optimized for this setting. Lowering temperature can make outputs overly deterministic and reduce creative problem-solving. Raising it can introduce unwanted randomness.
+- **Why:** The model's reasoning and instruction-following are optimized for this setting. Lowering temperature can cause "looping, or degraded performance, particularly with complex mathematical or reasoning tasks."
 - **Exception:** For highly creative tasks (poetry, fiction), you might experiment with slightly higher values (1.1-1.2), but 1.0 is the recommended starting point.
+- **Safety Fallback:** If safety filters trigger fallback responses, try increasing temperature to allow more open generation.
 
 ### 5. Use Consistent Structure
 - **XML tags or Markdown headings:** Choose one format and stick with it throughout a single prompt.
@@ -68,6 +69,7 @@ Gemini 3.0 Pro (officially released November 2025) is Google's most advanced rea
 ### 6. Context First, Questions LAST
 - **For long contexts:** Provide all documents, data, or code first. Place your specific instructions or questions at the very end.
 - **Why:** This structure helps Gemini 3 process all relevant information before executing the task.
+- **Anchor with transitions:** Use bridging phrases like "Based on the information above..." or "Given the context..." to connect data to your query.
 - **Example:**
   ```
   <context>
@@ -75,9 +77,38 @@ Gemini 3.0 Pro (officially released November 2025) is Google's most advanced rea
   </context>
 
   <task>
-  Based on the three papers above, identify common themes and contradictions. Present in a comparison table.
+  Based on the entire document above, identify common themes and contradictions. Present in a comparison table.
   </task>
   ```
+
+### 6.5 Constraint Organization (Critical for Gemini 3)
+- **Order matters:** Place negative constraints, formatting constraints, and quantitative limits **at the END** of your prompt.
+- **Why:** Gemini 3 may "drop negative constraints or formatting constraints if they appear too early."
+- **Recommended hierarchy:**
+  1. Context and source material
+  2. Main task instructions
+  3. Negative/formatting/quantitative constraints (LAST)
+
+**Before (Constraints may be dropped):**
+```
+Do not include prices over $100.
+Maximum 5 items.
+Format as bullet points.
+
+Find me laptop recommendations from the catalog below:
+[catalog data]
+```
+
+**After (Constraints preserved):**
+```
+Find me laptop recommendations from the catalog below:
+[catalog data]
+
+Requirements:
+- Do not include prices over $100
+- Maximum 5 items
+- Format as bullet points
+```
 
 ### 7. Anchor Context with Transitions
 - **After large blocks of data:** Use a clear transition phrase to bridge context and your query.
@@ -314,7 +345,125 @@ Structure your response as follows:
 - **Multimodal Enhancements:** Better handling of images, audio, and video when explicitly labeled.
 - **Knowledge Cutoff:** January 2025 (same as Claude 4.x models).
 
+## Advanced Patterns (Official Google Guidelines - January 2026)
+
+### Split-Step Verification for Unfamiliar Topics
+Use when addressing topics where the model might hallucinate:
+
+```
+Verify with high confidence if you're able to access [source].
+If you cannot verify, state 'No Info' and STOP.
+If verified, proceed with the following query:
+
+[actual request]
+```
+
+### Explicit Context Grounding
+For hypothetical scenarios or when context contradicts common knowledge:
+
+```
+Treat the provided context as the absolute limit of truth; any facts not directly mentioned must be considered completely unsupported.
+
+[context]
+
+[question]
+```
+
+For strict context adherence:
+```
+Perform calculations based strictly on provided text. Do not introduce external information.
+```
+
+### Output Verbosity Control
+Gemini 3 defaults to **concise responses**. To adjust:
+
+| Desired Style | Prompt Addition |
+|---------------|-----------------|
+| More conversational | "Explain this as a friendly, talkative assistant." |
+| Detailed explanation | "Provide a comprehensive, detailed response." |
+| Technical depth | "Include technical details and edge cases." |
+
+### Thinking Level for Latency
+For reduced latency, set `thinking_level: "LOW"` and add:
+```
+Think silently. Provide only the final answer without showing reasoning steps.
+```
+
+### Persona Usage Caution
+- Gemini 3 treats assigned personas seriously
+- The model may ignore instructions that conflict with the persona
+- **Avoid** ambiguous scenarios when using personas
+- Be explicit about persona boundaries
+
+### Few-Shot Examples (Gemini-Specific)
+Google recommends 2-3 few-shot examples for Gemini:
+
+```
+**Consistent formatting is critical** - maintain identical structure across all examples.
+
+Example 1:
+Input: [example input]
+Output: [example output]
+
+Example 2:
+Input: [example input]
+Output: [example output]
+
+Your turn:
+Input: [actual input]
+Output:
+```
+
+**Best practices:**
+- Show positive patterns (correct behavior) rather than what to avoid
+- 2-3 examples typically sufficient
+- Excessive examples risk overfitting
+- Use output prefixes to anchor format (e.g., start with `{"`)
+
+### Response Prefixes for Format Anchoring
+Begin the model's response to enforce structure:
+
+```python
+# For JSON output
+response = model.generate(
+    prompt="Return user data as JSON...",
+    prefix='```json\n{"user": '  # Forces JSON format
+)
+```
+
+### Self-Critique Pattern
+For quality improvement:
+
+```
+Before returning your final response, review your output against these criteria:
+1. Did I answer the user's *intent*, not just their literal words?
+2. Is the tone authentic to the requested persona?
+3. Did I follow all the specified constraints?
+4. Are there any logical inconsistencies or errors?
+
+If you find issues, revise your response before submitting.
+```
+
+### Distinguishing Deduction from External Knowledge
+Instead of broad "do not infer" constraints:
+
+```
+# Less effective
+Do not infer or assume anything.
+
+# More effective
+Perform calculations based strictly on provided text. Do not introduce external information or common knowledge.
+```
+
+---
+
 ## Quick Comparison
 - **vs. Claude 4.x:** Gemini 3 prefers more direct communication and simpler prompts. Claude 4.x benefits from explicit context/motivation and XML structure. Both have similar reasoning capabilities, but Claude excels at very long documents (200k context) while Gemini 3 maxes out at 1M context (with 64k output).
 - **vs. GPT-4:** Gemini 3 is more efficient with direct instructions and has a larger context window. GPT-4 Turbo is often more conversational and flexible with prompt styles.
 - **vs. Gemini 2.x:** Gemini 3 requires LESS prompting complexity. Stop using elaborate Chain-of-Thought techniques unless needed for specific edge cases.
+
+---
+
+## References
+- [Vertex AI Gemini 3 Prompting Guide](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/gemini-3-prompting-guide)
+- [Google AI Prompting Strategies](https://ai.google.dev/gemini-api/docs/prompting-strategies)
