@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **Prompt Engineering Knowledge Base v4.1** (January 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (GPT-5.x, Claude 4.x, Gemini 3.x).
+This is a **Prompt Engineering Knowledge Base v4.2** (January 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (GPT-5.x, Claude 4.x, Gemini 3.x).
 
 ## Architecture
 
@@ -12,7 +12,7 @@ The repository follows a modular documentation structure with a main entry point
 
 ```
 00-prompt-engineer.md           # Main entry point (APEX prompt engineer persona)
-                                # Auto-loads 01, 02; references 03-10 on demand
+                                # Auto-loads 01, 02; references 03-11 on demand
 01-core-concepts-terminology    # Technical definitions, context windows, thinking modes
 02-prompt-types-techniques      # Zero-shot, few-shot, role prompting, ReAct, RAG
 03-implementation-patterns      # Context engineering, anti-patterns, model-specific patterns
@@ -21,8 +21,9 @@ The repository follows a modular documentation structure with a main entry point
 06-Gemini_Deep_Research         # Gemini Deep Research tool reference
 07-Sonnet-4.5-Research          # Claude Research tool and 4.x best practices
 08-Gemini-3.0-Pro-Preview       # Gemini 3.0 Pro specific guidance
-09-agentic-prompting-patterns   # Tool orchestration, sub-agents, IDE agent patterns (NEW)
-10-safety-guardrails            # Injection defense, jailbreak resistance, output filtering (NEW)
+09-agentic-prompting-patterns   # Tool orchestration, sub-agents, multi-context workflows
+10-safety-guardrails            # Injection defense, jailbreak resistance, output filtering
+11-Claude-4.x-Best-Practices    # Official Anthropic guidelines (NEW v4.2)
 ```
 
 ## 2025 Paradigm Shift (Critical Context)

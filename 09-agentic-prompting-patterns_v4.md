@@ -212,6 +212,69 @@ After each major step:
 
 ---
 
+## 5.5 Multi-Context Window Workflows (Claude 4.x)
+
+**Definition**: Managing long-running tasks that span multiple context windows.
+
+### 5.5.1 State Management Pattern
+
+**Use structured formats for schema data, unstructured for progress notes**:
+
+```json
+// tests.json - Structured state
+{
+  "tests": [
+    {"id": 1, "name": "auth_flow", "status": "passing"},
+    {"id": 2, "name": "user_mgmt", "status": "failing"}
+  ],
+  "total": 200,
+  "passing": 150,
+  "failing": 25
+}
+```
+
+```text
+// progress.txt - Unstructured progress
+Session 3 progress:
+- Fixed token validation
+- Updated user model
+- Next: investigate test #2 failures
+- Note: Do not remove tests
+```
+
+### 5.5.2 First Context Window Setup
+
+Use the first window to create framework, then iterate:
+
+```xml
+<first_window_setup>
+1. Write tests before implementation (store in tests.json)
+2. Create setup scripts (init.sh) for servers, linters, test suites
+3. Establish git checkpoints for state recovery
+4. Define success criteria
+</first_window_setup>
+```
+
+### 5.5.3 Context Continuation Pattern
+
+When starting fresh context:
+
+```
+Call pwd; you can only read and write files in this directory.
+Review progress.txt, tests.json, and the git logs.
+Manually run through a fundamental integration test before implementing new features.
+```
+
+### 5.5.4 Encourage Complete Context Usage
+
+```xml
+<maximize_context>
+This is a very long task, so plan your work clearly. It's encouraged to spend your entire output context working on the task - just make sure you don't run out of context with significant uncommitted work. Continue working systematically until complete.
+</maximize_context>
+```
+
+---
+
 ## 6. Sub-Agent Orchestration
 
 **Definition**: Delegating subtasks to specialized agents with minimal context.
@@ -341,10 +404,54 @@ description: [What]. USE WHEN [triggers].
 
 ## 8. Model-Specific Agentic Guidance
 
-### Claude 4.x
-- **Strength**: Long-horizon reasoning, parallel tool calling, extended autonomous operation
-- **Watch**: May overtrigger tools, tendency to over-engineer
-- **Prompt**: Use calm language for tools, constrain scope explicitly
+### Claude 4.x (Updated January 2026 - Official Anthropic Guidelines)
+
+**Strengths**:
+- Long-horizon reasoning with exceptional state tracking
+- Native parallel tool calling (especially Sonnet 4.5)
+- Extended autonomous operation across multiple context windows
+- Native subagent orchestration (proactive delegation)
+- Context awareness (tracks remaining token budget)
+
+**Watch For**:
+- **Opus 4.5**: May overtrigger on tools, tendency to overengineer
+- **Sonnet 4.5**: Aggressive parallel calls can bottleneck systems
+- **All models**: Sensitive to "think" when extended thinking disabled
+
+**Agentic Prompt Patterns**:
+
+```xml
+<!-- For proactive tool use -->
+<default_to_action>
+By default, implement changes rather than only suggesting them. If the user's intent is unclear, infer the most useful likely action and proceed, using tools to discover any missing details instead of guessing.
+</default_to_action>
+
+<!-- For conservative tool use -->
+<do_not_act_before_instructions>
+Do not jump into implementation unless clearly instructed. Default to providing information and recommendations rather than taking action.
+</do_not_act_before_instructions>
+
+<!-- Parallel tool calling optimization -->
+<use_parallel_tool_calls>
+If you intend to call multiple tools and there are no dependencies between the calls, make all independent calls in parallel. Never use placeholders or guess missing parameters.
+</use_parallel_tool_calls>
+
+<!-- Long-running task management -->
+<context_management>
+Your context window will be automatically compacted. Do not stop tasks early due to token budget concerns. Save progress to memory before context refreshes. Be as persistent and autonomous as possible.
+</context_management>
+
+<!-- Prevent overengineering (Opus 4.5) -->
+<avoid_overengineering>
+Keep solutions minimal. Don't add features beyond what was asked. Don't create helpers or abstractions for one-time operations. The right complexity is the minimum needed for the current task.
+</avoid_overengineering>
+```
+
+**Tool Triggering Fix (Opus 4.5)**:
+| Overtriggers | Balanced |
+|--------------|----------|
+| `CRITICAL: You MUST use...` | `Use this tool when...` |
+| `ALWAYS call this function` | `Call when appropriate` |
 
 ### GPT-5.x
 - **Strength**: Clean instruction following, minimal verbosity

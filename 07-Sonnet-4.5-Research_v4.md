@@ -154,6 +154,49 @@ After researching, identify connections between these topics and synthesize into
 - **Be explicit about reasoning needs:** If you want extended thinking, request it. If you don't, avoid phrases like "think step-by-step."
 - **Provide motivation:** Share the "why" behind your research request to help Claude prioritize relevant information.
 
+## Agentic Coding Patterns (Official Anthropic Guidelines - January 2026)
+
+### Encourage Code Exploration
+Opus 4.5 can be overly conservative. Add explicit instructions:
+
+```xml
+<code_exploration>
+ALWAYS read and understand relevant files before proposing code edits. Do not speculate about code you have not inspected. If the user references a specific file/path, you MUST open and inspect it before explaining or proposing fixes. Be rigorous and persistent in searching code for key facts.
+</code_exploration>
+```
+
+### Minimize Hallucinations
+
+```xml
+<investigate_before_answering>
+Never speculate about code you have not opened. If the user references a specific file, you MUST read the file before answering. Make sure to investigate and read relevant files BEFORE answering questions about the codebase. Never make any claims about code before investigating.
+</investigate_before_answering>
+```
+
+### Prevent Overengineering (Opus 4.5)
+
+```xml
+<avoid_overengineering>
+Avoid over-engineering. Only make changes that are directly requested or clearly necessary. Keep solutions simple and focused. Don't add features, refactor code, or make "improvements" beyond what was asked. Don't create helpers or abstractions for one-time operations.
+</avoid_overengineering>
+```
+
+### Avoid Hard-Coding & Test-Focused Solutions
+
+```xml
+<general_solutions>
+Write high-quality, general-purpose solutions. Do not hard-code values or create solutions that only work for specific test inputs. Implement the actual logic that solves the problem generally. Tests verify correctness, not define the solution.
+</general_solutions>
+```
+
+### Tool Triggering (Opus 4.5)
+Dial back aggressive language to prevent overtriggering:
+
+| Overtriggers | Balanced |
+|--------------|----------|
+| `CRITICAL: You MUST use...` | `Use this tool when...` |
+| `ALWAYS call this function` | `Call when appropriate` |
+
 ## Quick Comparison
 - **vs. Gemini Deep Research:** Claude is better at processing very long documents (200k token window) and shows a greater willingness to admit uncertainty. Gemini visits more sources (40-250+ vs. 5-20+) and is cheaper ($20/mo vs. Pro tier pricing).
 - **vs. ChatGPT Deep Research:** Claude is often faster and more conversational. ChatGPT may produce more polished reports and asks clarifying questions before starting.
