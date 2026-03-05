@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+
+# Claude Code local settings
+.claude/
+
+# OMC state (session-scoped)
+.omc/
+
+# TLDR cache
+.tldr/
+
+# Python
+.venv*/
+__pycache__/
+*.pyc
