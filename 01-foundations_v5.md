@@ -78,9 +78,9 @@ Every effective prompt contains some combination of:
 
 | Model Family | Preferred Format | Key Pattern |
 |--------------|-----------------|-------------|
-| Claude 4.6 | XML tags | `<context>`, `<task>`, `<output_format>` |
-| GPT-5.x | Markdown headers | `## Context`, `## Task`, `## Output` |
-| Gemini 3.1 | XML or Markdown | Either works; be consistent within prompt |
+| Claude 5 family | XML tags | `<context>`, `<task>`, `<output_format>` |
+| GPT-5.x | Markdown or XML | XML tags now recommended |
+| Gemini 3.x | XML or Markdown | Either works; be consistent within prompt |
 
 ### Delimiter Implementation
 
@@ -172,28 +172,40 @@ Instead of prompt-based Chain-of-Thought, use each model's native reasoning capa
 
 ### Overview by Model Family
 
-**Claude 4.6 (Anthropic)** -- Adaptive Thinking:
+**Claude 5 Family (Anthropic)** -- Adaptive Thinking + Effort:
 ```
-Modes:
-- Adaptive (default): Model decides when/how deeply to reason
-- Extended thinking: /think, /megathink, /ultrathink for explicit control
-- Interleaved: Thinking after tool results for reflection
+Thinking defaults (per model):
+- Fable 5: always-on (can't disable); raw CoT never returned. `thinking.display` defaults to `"omitted"` -- set `"summarized"` to get readable summaries back
+- Opus 5: on by default; can disable only at effort ≤high
+- Opus 4.8: off unless type:"adaptive" set
+- Sonnet 5: on by default; type:"disabled" to turn off
+- Haiku 4.5: manual budget (budget_tokens:N)
 
-Best practice: Let the model decide. Provide good context.
+Effort parameter (output_config.effort):
+- low/medium/high (default)/xhigh/max
+- Primary cost lever; low/medium often exceed prior models' xhigh
+- Controls thinking depth, NOT response length
+
+Best practice: Let model decide. Raise effort for depth, not "think harder".
 ```
 
-**Gemini 3.1 (Google)** -- Thinking Level:
+**Gemini 3.x (Google)** -- Thinking Level:
 ```json
 {
-  "thinking_level": "high",   // "low" for speed, "high" for depth
-  "temperature": 1.0          // REQUIRED -- do not change
+  "thinking": {"thinking_level": "medium"}  // nested, not top-level
+                               // minimal (3.5 Flash only)/low/medium (default)/high
+  // OMIT temperature/top_p/top_k entirely (still accepted, but discouraged;
+  // sub-1.0 temperature MAY cause looping/degradation on reasoning tasks)
 }
 ```
 
-**GPT-5.x (OpenAI)** -- Reasoning Profiles:
+**GPT-5.x (OpenAI)** -- Reasoning Effort:
 ```json
 {
-  "reasoning_profile": "deep"  // "light", "balanced", or "deep"
+  "reasoning": {"effort": "medium"}  // Responses API. Enum is PER-MODEL:
+                                     // GPT-5 base: minimal/low/medium/high
+                                     // 5.2/5.5: none/low/medium/high/xhigh
+                                     // 5.6: adds max
 }
 ```
 
@@ -357,8 +369,8 @@ Place stable content first, dynamic content last:
 | Provider | Mechanism | Max Savings |
 |----------|-----------|-------------|
 | Anthropic | Explicit `cache_control` breakpoints | ~90% on cached tokens |
-| OpenAI | Automatic prefix caching | ~50% on repeated prefixes |
-| Google | Explicit cache creation via API | ~75% on cached context |
+| OpenAI | Automatic prefix caching | ~90% on cached tokens |
+| Google | Explicit cache creation via API | ~90% on cached tokens (excl. storage) |
 
 ### Token Efficiency Principles
 
@@ -392,7 +404,7 @@ Place stable content first, dynamic content last:
 | "Let's think step by step" | Obsolete | Use thinking modes instead |
 | Complex prompt frameworks | Harmful | Simpler prompts work better |
 | Conversational padding | Harmful | Especially bad for Gemini 3.x |
-| Lowering Gemini temperature | Harmful | Causes loops/degradation |
+| Lowering Gemini temperature | Discouraged | May cause loops/degradation |
 | "Think" word (Claude, thinking off) | Harmful | Use "consider", "evaluate" |
 
 ---

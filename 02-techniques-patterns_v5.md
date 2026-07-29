@@ -11,7 +11,7 @@ This module is the **canonical home for all prompting techniques and ALL anti-pa
 
 **Definition**: Direct instruction without examples, relying on the model's pre-trained knowledge and native reasoning.
 
-**Status**: The **default approach** for all reasoning models (Claude 4.6, GPT-5.x, Gemini 3.1).
+**Status**: The **default approach** for all reasoning models (Claude 5 family, GPT-5.x, Gemini 3.x).
 
 **When to use**: Almost always. Start here.
 
@@ -383,7 +383,7 @@ Detection:
 
 **Impact by model**:
 - **Gemini 3.x**: Actively degrades instruction-following
-- **Claude 4.6**: Tolerates but gains nothing
+- **Claude 5 family**: Tolerates but gains nothing
 - **GPT-5.x**: Neutral impact, wastes tokens
 
 **Bad** (for Gemini):
@@ -400,13 +400,13 @@ Analyze this data. Return results as JSON.
 
 ### AP-5: Temperature Misconfiguration (Gemini)
 
-**Gemini 3.x REQUIRES temperature = 1.0. Deviating causes loops and degraded performance.**
+**Gemini 3.x: OMIT `temperature`/`top_p`/`top_k` entirely.** Official guidance is to remove them and use defaults; setting sub-1.0 temperature causes looping and degraded performance. Steer via prompt instead.
 
 This is not a preference -- it's a hard requirement. The model's reasoning is calibrated for this setting.
 
 ### AP-6: "Think" Word Sensitivity (Claude)
 
-When extended thinking is **disabled**, Claude (especially Opus) is sensitive to the word "think".
+When extended thinking is **disabled**, Claude can be sensitive to the word "think". Anthropic documents this for Opus 4.5 specifically -- treat it as a known behavior to test for, not a guaranteed property of every Claude model.
 
 | Avoid | Use Instead |
 |-------|-------------|
@@ -447,16 +447,56 @@ GPT-5 models perform better with minimal prompts. Adding unnecessary instruction
 ### AP-10: Ignoring Model-Specific Parameters
 
 Each model family has parameters that significantly affect output. Ignoring them wastes potential:
-- Claude: effort parameter, extended thinking
-- GPT-5: reasoning profiles
-- Gemini: thinking_level, temperature=1.0
+- Claude 5 family: `output_config.effort` (primary cost lever), adaptive thinking defaults
+- GPT-5.x: `reasoning_effort` (none→xhigh)
+- Gemini 3.x: `thinking_level` (OMIT temp/top_p/top_k)
+
+### AP-11: Persona on Accuracy/Explanatory Tasks
+
+"You are a world-class expert" on math/coding/factual/explanatory tasks trades clarity for depth with no broad capability gain (MMLU 71.6%→66.3%). Persona helps only advisory/depth tasks.
+
+### AP-12: "Never Hallucinate" Instruction
+
+"Never hallucinate", "do not make up information" has no mechanism and wastes tokens. Use grounding techniques instead (cite sources, quote context, request calibrated uncertainty).
+
+### AP-13: Agentic Over-Eagerness Unmanaged
+
+No stop conditions, no "what DONE looks like", no scope limits in agentic prompts leads to runaway execution, unrequested actions, and scope creep.
+
+### AP-14: "Think Harder/Keep Going" on Reasoning Models
+
+"Think more", "think longer", "keep reasoning" causes harmful overthinking that corrupts already-correct answers (stop-early = +21% accuracy, arXiv:2606.02835). Lower the effort parameter instead -- but note effort is soft behavioral guidance, not a hard cap. `max_tokens` is the only strict ceiling.
+
+### AP-15: Offset-from-End References (Position Curse)
+
+"The second-to-last item", "the last two lines" -- models mis-locate list tails even in tiny lists (arXiv:2605.07127, May 2026). Use forward indices or unique anchors instead.
+
+### AP-16: Verification Instructions on Opus 5/Fable 5
+
+Both Opus 5 and Fable 5 self-verify by default. Explicit instructions like "double-check" or "verify your answer" cause over-verification -- added cost, no accuracy gain.
+
+### AP-17: Fable 5 Reasoning Echo
+
+Detection:
+- Contains "show your reasoning"
+- Contains "explain your thought process"
+
+Requesting Fable 5 to expose its internal reasoning triggers a `reasoning_extraction` refusal.
+
+### AP-18: Over-Prescriptive Fable 5 Prompts
+
+Anthropic's wording: a brief instruction "can be as effective as" enumerating each desired behavior for Fable 5. Prefer brevity because it costs less and is easier to maintain -- not because enumeration is documented to degrade output.
+
+### AP-19: Overthinking DoS
+
+Adversarial, logically-inconsistent prompts force runaway chain-of-thought in reasoning models. Cap thinking budgets in production (ICML 2026).
 
 ---
 
 ## Technique Decision Tree
 
 ```
-START -> Is this a reasoning model (Claude 4.6 / GPT-5.x / Gemini 3.1)?
+START -> Is this a reasoning model (Claude 5 family / GPT-5.x / Gemini 3.x)?
   |
   +-- YES -> Use zero-shot first
   |           |

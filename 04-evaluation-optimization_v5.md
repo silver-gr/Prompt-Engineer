@@ -593,9 +593,9 @@ def optimize_for_claude(prompt):
 ```python
 def optimize_for_gpt5(prompt, complexity):
     structured = structure_with_markdown(prompt)
-    config = {'prompt': structured, 'reasoning_profile': 'balanced'}
+    config = {'prompt': structured, 'reasoning_effort': 'medium'}
     if complexity == 'high':
-        config['reasoning_profile'] = 'deep'
+        config['reasoning_effort'] = 'high'
         config['prompt'] += "\n\nVerify your answer before responding."
     return config
 ```
@@ -608,8 +608,8 @@ def optimize_for_gemini(prompt):
     structured = structure_clearly(cleaned)
     return {
         'prompt': structured,
-        'temperature': 1.0,     # REQUIRED
-        'thinking': 'auto'
+        # omit temperature/top_p/top_k -- 1.0 default is what Google recommends
+        'thinking': {'thinking_level': 'medium'},   # minimal|low|medium|high
     }
 ```
 
@@ -667,8 +667,8 @@ def calculate_prompt_quality(prompt, performance_results):
 
 ## References
 
-- OpenAI GPT-5 Optimization Guide (2025-2026)
-- Anthropic Claude 4.x Best Practices (2025-2026)
-- Google Gemini 3.x Technical Documentation (2025-2026)
+- [OpenAI: Using the latest model](https://developers.openai.com/api/docs/guides/latest-model)
+- [Anthropic: Claude prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
+- [Google: Gemini 3 Developer Guide](https://ai.google.dev/gemini-api/docs/gemini-3)
 - Wei, J., et al. (2022). "Chain-of-Thought Prompting." [arXiv:2201.11903](https://arxiv.org/abs/2201.11903)
 - Liu, P., et al. (2023). "Pre-train, Prompt, and Predict." [ACM Computing Surveys](https://dl.acm.org/doi/abs/10.1145/3560815)

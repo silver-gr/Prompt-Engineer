@@ -424,20 +424,58 @@ def log_interaction(prompt, response, metadata):
 
 ## 10. Model-Specific Safety Notes
 
-### Claude 4.6
+### Claude 5 Family
 - Strong native alignment; responds well to clear boundaries
 - Can be over-cautious; calibrate refusals to avoid false positives
-- Extended thinking can expose reasoning; consider if appropriate for security context
+- Raw CoT is never returned on Fable 5. `thinking.display` defaults to `"omitted"` -- you get no thinking content at all unless you explicitly set `"summarized"`
+
+**Fable 5 safety classifiers** target three domains:
+| Domain | Scope | Note |
+|--------|-------|------|
+| Offensive cybersecurity | Exploits, malware, attack tooling | Benign security work may also trigger |
+| Biology / life sciences | Lab methods, molecular mechanisms | Beneficial research may also trigger |
+| `reasoning_extraction` | Attempts to extract summarized thinking | See prompt-engineering implication below |
+
+**Refusals are HTTP 200, not errors**: `stop_reason: "refusal"` + `stop_details` category. Handle in your harness — do not treat as an exception.
+
+**Fallback configuration**: Route refused requests to Opus 4.8 via server-side `fallbacks` param or client-side SDK middleware. Fallback credit refunds cache-switch cost; output-free refusals are not billed.
+
+**Prompt-engineering implication (critical)**: Do NOT instruct Fable 5 to echo, transcribe, or explain its internal reasoning as response text. Prompts, skills, or harness instructions that do this trigger `reasoning_extraction` refusals and elevated fallbacks. Audit existing system prompts for "show your thinking" / "explain your reasoning" instructions when migrating. Read structured `thinking` blocks instead.
+
+- **Mythos 5** (`claude-mythos-5`, invite-only): no safety classifiers
+- **Sonnet 5**: first Sonnet with real-time cyber safeguards (`refusal` stop reason)
 
 ### GPT-5.x
 - Excellent instruction following; safety rules well-respected
-- JSON mode helps with output validation
+- Structured outputs help with output validation
 - System messages strongly prioritized
 
-### Gemini 3.1
+### Gemini 3.x
 - Direct instructions work best; avoid elaborate safety preambles
-- Temperature 1.0 required (safety not affected)
+- OMIT temperature/top_p/top_k (defaults; safety not affected)
 - Apply safety rules to all modalities (text, image, audio, video)
+
+---
+
+## 11. Compaction as a Safety Surface
+
+Context compaction is a **security-relevant failure mode**, not just a capacity mechanism.
+
+| Finding | Implication | Source |
+|---------|------------|--------|
+| Summarization silently evicts standing rules (tool-call violations 0%→30-59%) | Re-pin governance rules, permissions, and safety constraints after every compaction | arXiv:2606.22528 |
+| LLM summarizers are lossy AND ignore volume instructions (run-to-run variable) | Prefer deterministic, structure-aware eviction where you control the harness | arXiv:2606.11213 |
+
+**Mitigation pattern**:
+```xml
+<standing_constraints priority="highest">
+[Safety rules, permission boundaries, forbidden operations]
+These constraints survive all context transitions. Re-read them after any
+summarization or compaction event before taking further action.
+</standing_constraints>
+```
+
+Do not rely on an early system instruction still governing after compaction. Re-inject constraints near the generation point.
 
 ---
 

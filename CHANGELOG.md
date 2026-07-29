@@ -2,6 +2,86 @@
 
 All notable changes to the Prompt Engineering Knowledge Base are documented in this file.
 
+## [6.0] - 2026-07-29
+
+### Claude 5 Family Update
+
+Major update covering the Claude 5 generation (Fable 5, Opus 5, Sonnet 5) alongside Opus 4.8, plus refreshed specs across all providers. Sourced from official Anthropic prompting guides and evidence-based research.
+
+### Model Updates
+| Provider | v5.0 (Mar 2026) | v6.0 (Jul 2026) |
+|----------|-----------------|-----------------|
+| Anthropic | Opus 4.6, Sonnet 4.6, Haiku 4.5 | **Fable 5 / Mythos 5, Opus 5, Opus 4.8, Sonnet 5**, Haiku 4.5 |
+| OpenAI | GPT-5.2 Thinking, 5.3 Instant | GPT-5.5, GPT-5.6 Sol/Terra/Luna (preview) |
+| Google | Gemini 3.1 Pro, 3.1 Flash-Lite | Gemini 3.5 Flash, 3.1 Pro |
+| xAI | Grok 4.20 Beta 2 | Grok 4.x |
+| DeepSeek | V3.2 | **V4** (MIT, 1M ctx, Flash/Pro tiers) |
+| Zhipu | GLM-5 | **GLM-5.2** (MIT, top open-weight) |
+| Alibaba | Qwen 3.5 | **Qwen 3.7** (flagship now closed/API-only) |
+| Moonshot | Kimi K2.5 | **Kimi K3** (open weights, 2.8T MoE), K2.6 (Agent Swarm v2) |
+| MiniMax | (missing) | **M3** (budget frontier + multimodal) |
+| Meta | Llama 4 Scout/Maverick | Llama 4 (frozen — Meta frontier went closed) |
+
+### Breaking API Changes Documented
+- **Prefill removed** — assistant-message on last turn → 400 on Claude 4.6+ / Mythos
+- **Manual thinking budgets removed** — `budget_tokens` → 400 (except Haiku 4.5)
+- **Sampling params removed** — `temperature`/`top_p`/`top_k` → 400 on current Claude gen (now includes Sonnet 5)
+- **New tokenizer** — ~30% more tokens on all current models except Haiku 4.5
+- **Thinking defaults differ per model** — always-on (Fable 5), on-by-default (Opus 5, Sonnet 5), off-unless-set (Opus 4.8)
+- **`output_config.effort`** — effort moved to top-level config; low/medium/high/xhigh/max
+
+### New Content
+- **Effort parameter as primary cost lever** — low/medium on current models often exceed prior xhigh; effort cross-mapping tables
+- **Opus 5 subtraction principle** — remove verification instructions, scope constraints, subagent caps, correction-narration limits
+- **Fable 5 patterns** — brief-instruction steering, memory systems, progress grounding, action boundaries, early-stopping mitigation, context-budget reassurance
+- **send-to-user tool pattern** (10) — verbatim mid-turn delivery for long async agents
+- **Memory systems** (10) — one-lesson-per-file, dedupe, bootstrap-from-history
+- **Orchestrator + executor pattern** (10) — frontier orchestrates, cheaper model executes
+- **Safety classifiers** (09) — Fable 5 cyber/bio/`reasoning_extraction` domains, refusal-as-HTTP-200, fallback configuration
+- **Compaction as safety surface** (09) — constraint eviction and re-pinning mitigation
+- **Code review harness guidance** (06) — coverage-first prompting to counter literal severity filtering
+
+### Corrections
+- **Gemini sampling params** — removed incorrect "`temperature = 1.0` REQUIRED" guidance from 02, 07, 09, 10 and 00 cheat sheet; current official guidance is to OMIT sampling params entirely
+- **Model tier ordering** — Fable 5 sits above Opus; Opus 5 added between Fable 5 and Opus 4.8
+
+### New Anti-Patterns
+- **AP-11** Persona on accuracy/explanatory tasks (MMLU 71.6%→66.3%)
+- **AP-12** "Never hallucinate" instruction (no mechanism)
+- **AP-13** Agentic over-eagerness unmanaged (no stop conditions)
+- **AP-14** "Think harder/keep going" (overthinking corrupts correct answers; stop-early = +21%, arXiv:2606.02835)
+- **AP-15** Offset-from-end references (Position Curse, arXiv:2605.07127)
+- **AP-16** Verification instructions on Opus 5 / Fable 5 (self-verify natively)
+- **AP-17** Fable 5 reasoning echo (triggers `reasoning_extraction` refusal)
+- **AP-18** Over-prescriptive Fable 5 prompts (enumeration degrades output)
+- **AP-19** Overthinking DoS (adversarial runaway CoT, ICML 2026)
+
+### Cost Gotchas Newly Documented
+
+Several 2026 models reprice the **entire request** once an input threshold is crossed — not just the tokens above it. Budgeting per-token averages will understate cost:
+
+| Model | Threshold | Effect |
+|-------|-----------|--------|
+| Grok 4.5 | ≥200K prompt | $2/$6 → $4/$12 per 1M, whole request |
+| GPT-5.6 | >272K input | 2x input / 1.5x output, whole request |
+| GPT-5.6 | Cache writes | 1.25x standard input rate |
+| Claude 5-gen | New tokenizer | ~30% more tokens for identical text |
+
+### Verified Model Additions (direct official-docs fetch)
+
+- **Grok 4.5** — 500K ctx, closed API, reasoning cannot be disabled, `reasoning_effort` low/med/high (default high). `presence_penalty`/`frequency_penalty`/`stop` rejected as errors. No official prompting guide published.
+- **Kimi K3** — 1M ctx, **open weights** (custom Kimi K3 License), $3/$15 ($0.30 cache hit), always-on thinking, `reasoning_effort` low/high/max (default max). 2.8T MoE / 104B activated, MoonViT-V2 vision. Preserved-thinking mode requires verbatim replay of `reasoning_content` + `tool_calls`.
+- **GPT-5.6 Sol / Terra / Luna** — GA July 9, 2026. 1.05M ctx (922K max input) / 128K out, identical across tiers. `reasoning.effort` gains a new `max` level. Official guidance: lean prompts (10-15% eval gain at 41-66% fewer tokens), state each instruction once, avoid repeated caution phrases, use `text.verbosity` rather than "be concise".
+- **Qwen 3.8 Max Preview** — **not found**. Alibaba Cloud Model Studio's current top Max-tier model is `qwen3.7-max`; no 3.8 designation exists in official listings or on HuggingFace. Not added to the catalog.
+
+### Research Citations
+- arXiv:2606.22528 — compaction/governance decay (tool-call violations 0%→30-59%)
+- arXiv:2606.02835 — overthinking harm, early-stop benefit
+- arXiv:2606.13603 — CoT commitment boundary, epiphenomenal reasoning
+- arXiv:2605.07127 — Position Curse (positional retrieval failure)
+- arXiv:2605.12922 — multi-turn goal drift as attention-reachability failure
+- ICML 2026 (Zhejiang/Alibaba) — adversarial overthinking DoS
+
 ## [5.0] - 2026-03-05
 
 ### Major Rewrite

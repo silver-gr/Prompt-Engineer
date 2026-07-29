@@ -88,7 +88,7 @@ Return as:
   "confidence_level": 0.0-1.0
 }}
 """
-    return model.generate(prompt, reasoning_profile='deep')
+    return model.generate(prompt, reasoning_effort='high')
 ```
 
 ### Example
@@ -163,13 +163,13 @@ Include:
 
 Return as markdown code block.
 """
-    return model.generate(prompt, temperature=0.2)  # Except Gemini: 1.0
+    return model.generate(prompt, temperature=0.2)  # Gemini: omit, leave at 1.0
 ```
 
 ### Best Practices
 - Don't prescribe code review steps ("first check syntax, then review logic...")
 - Specify language, conventions, and constraints
-- Lower temperature for code (except Gemini: always 1.0)
+- Lower temperature for code (Gemini: omit the parameter -- 1.0 default is recommended, sub-1.0 may cause looping)
 - Let models do comprehensive analysis naturally
 
 ---
@@ -465,12 +465,12 @@ Return as JSON array of test cases.
 ## 10. Performance Optimization by Application
 
 ### High-Stakes Analysis (Legal, Medical, Financial)
-- Use `thinking_mode='deep'` or `reasoning_profile='deep'`
-- Request verification
+- Claude: `output_config.effort: "xhigh"` or `"max"` · GPT-5.x: `reasoning.effort: "high"` (`"xhigh"` on 5.2+, `"max"` on 5.6 only -- GPT-5 base tops out at `"high"`) · Gemini: `thinking_level: "high"`
 - Structured output with confidence scores
+- Note: on Opus 5 / Fable 5, skip explicit verification requests — they self-verify
 
 ### Real-Time Applications (Chatbots, Interactive)
-- Use `thinking_mode='light'` or `reasoning_profile='light'`
+- Claude: `output_config.effort: "low"` · GPT-5.x: `reasoning.effort: "low"` (`"none"` on 5.2+; GPT-5 base uses `"minimal"`) · Gemini: `thinking_level: "minimal"` on 3.5 Flash, `"low"` on 3.1 Pro
 - Optimize for latency
 - Cache system prompts
 

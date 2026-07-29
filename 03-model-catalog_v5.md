@@ -1,128 +1,223 @@
-# Model Catalog & Selection Guide (March 2026)
+# Model Catalog & Selection Guide (July 2026)
 
 This is the **single source of truth** for all model specifications, capabilities, and selection guidance. Other modules reference this catalog but do not duplicate model data.
 
 ---
 
-## Frontier Landscape (March 2026)
+## Frontier Landscape (July 2026)
 
 | Provider | Model | Context | Output | Release | Key Strength |
 |----------|-------|---------|--------|---------|--------------|
-| Anthropic | Opus 4.6 | 200K | 32K | Feb 2026 | Adaptive thinking, peak reasoning |
-| Anthropic | Sonnet 4.6 | 200K / 1M (beta) | 32K | Feb 2026 | Best coding, aggressive parallelism |
-| Anthropic | Haiku 4.5 | 200K | 16K | Sep 2025 | Speed + quality, sub-agents |
-| OpenAI | GPT-5.2 Thinking | 128K | 32K | Dec 2025 | SOTA chatbot, deep reasoning |
-| OpenAI | GPT-5.3 Instant | 128K | 16K | Mar 2026 | Ultra-low latency, cost-efficient |
-| OpenAI | GPT-5.1 | 128K | 16K | Oct 2025 | Flexible reasoning modes |
-| Google | Gemini 3.1 Pro | 1M | 64K | Feb 2026 | #1 benchmarks, massive context |
-| Google | Gemini 3.1 Flash-Lite | 1M | 32K | Mar 2026 | Real-time, cost-optimized |
-| Google | Gemini 2.5 Pro | 1M | 64K | 2025 | Multimodal, adaptive thinking |
-| xAI | Grok 4.20 Beta 2 | 2M | 32K | Feb 2026 | Largest context, real-time data |
-| DeepSeek | V3.2 | 512K | 32K | 2025 | Cost-effective reasoning |
-| Zhipu | GLM-5 | 512K | 32K | Feb 2026 | 744B params, bilingual |
-| Alibaba | Qwen 3.5 | 256K | 32K | Feb 2026 | 201 languages |
-| Moonshot | Kimi K2.5 | 2M | 64K | Jan 2026 | Agent Swarm orchestration |
-| Meta | Llama 4 Maverick | 1M | 32K | Mar 2026 | Open-weight, MoE architecture |
-| Meta | Llama 4 Scout | 1M | 16K | Mar 2026 | Open-weight, efficient |
-| Mistral | Large 3 | 256K | 32K | Feb 2026 | European sovereignty, multilingual |
+| Anthropic | Fable 5 | 1M | 128K | Jun 2026 | Highest capability, long-horizon autonomy |
+| Anthropic | Opus 5 | 1M | 128K | Jul 2026 | Agentic coding, code review, self-verification |
+| Anthropic | Opus 4.8 | 1M | 128K | May 2026 | Enterprise coding, dynamic workflows |
+| Anthropic | Sonnet 5 | 1M | 128K | Jun 2026 | Default model, strong coding, cost-efficient |
+| Anthropic | Haiku 4.5 | 200K | 64K | Oct 2025 | Speed + quality, sub-agents |
+| OpenAI | GPT-5.6 Sol | 1.05M | 128K | Jul 2026 | Frontier; `max` effort tier new |
+| OpenAI | GPT-5.6 Terra / Luna | 1.05M | 128K | Jul 2026 | Balanced / high-volume tiers |
+| OpenAI | GPT-5.5 | 1.05M | 128K | 2026 | Prior flagship, Responses API |
+| Google | Gemini 3.5 Flash | 1M | 64K | 2026 | Fast reasoning, cost-optimized |
+| Google | Gemini 3.1 Pro | 1M | 64K | Feb 2026 | Deep reasoning, massive context |
+| xAI | Grok 4.5 | 500K | — | 2026 | Reasoning always-on, tiered pricing |
+| DeepSeek | V4 | 1M | 384K | 2026 | MIT, cost-effective frontier |
+| Zhipu | GLM-5.2 | 1M | 64K | 2026 | Top open-weight, MIT license |
+| Alibaba | Qwen 3.7 | 1M | 32K | 2026 | Flagship closed API, multilingual |
+| Moonshot | Kimi K3 | 1M | — | Jul 2026 | Open weights, always-on thinking, 2.8T MoE |
+| Moonshot | Kimi K2.6 | 2M | 64K | 2026 | Agent Swarm v2 (300 agents, 4K steps) |
+| MiniMax | M3 | 512K | 32K | 2026 | Budget frontier coding + multimodal |
+| Meta | Llama 4 Scout | 10M | 32K | Apr 2025 | Open-weight, largest context (frozen) |
+| Mistral | Large 3 | 256K | 32K | Feb 2026 | EU compliance, open weights |
 
 ---
 
-## 1. Anthropic (Claude 4.6 Family)
+## 1. Anthropic (Claude 5 Family + Opus 4.8)
 
-### Claude Opus 4.6
+> **Tier order:** Fable 5 / Mythos 5 (top) > Opus 5 > Opus 4.8 > Sonnet 5 > Haiku 4.5
+> Start with: **Opus 5** for agentic coding · **Fable 5** for highest capability · **Sonnet 5** = default
 
-**Released**: February 5, 2026 | **Model ID**: `claude-opus-4-6`
+### Claude Fable 5
 
-- **Context Window**: 200K tokens
-- **Key Feature**: **Adaptive thinking** -- model autonomously decides when and how deeply to reason, eliminating the need for explicit thinking mode toggling
-- **Strengths**: Peak reasoning, long-horizon task handling, exceptional state tracking, nuanced instruction following
-- **Thinking**: Adaptive (automatic), extended thinking (explicit), interleaved thinking after tool use
-- **Effort Parameter**: `"low"` | `"medium"` | `"high"` (unique to Opus)
+**Released**: June 9, 2026 | **Model ID**: `claude-fable-5`
 
-**Prompting Quick-Reference**:
-- Be EXPLICIT -- Opus follows instructions precisely, needs clear direction
-- Explain WHY, not just WHAT -- Claude generalizes from explanatory context
-- XML tags for structure (`<context>`, `<task>`, `<constraints>`, `<output_format>`)
-- Use "consider", "evaluate", "analyze" instead of "think" when extended thinking disabled
-- Dial back aggressive language -- Opus may overtrigger on tools with CAPS/emphasis
-- Constrain scope explicitly -- tendency to overengineer ("Keep solutions minimal")
-
-**Watch For**:
-- Tool overtriggering with aggressive language ("CRITICAL: MUST use..." -> "Use when...")
-- Overengineering (add "Don't add features beyond what was asked")
-- Sensitive to "think" word when extended thinking disabled
-
-### Claude Sonnet 4.6
-
-**Released**: February 17, 2026 | **Model ID**: `claude-sonnet-4-6`
-
-- **Context Window**: 200K tokens / 1M (beta)
-- **Key Feature**: Best-in-class coding with adaptive thinking, most aggressive parallel tool calling
-- **Strengths**: SOTA software development, agentic workflows, extended autonomous operation (hours of independent work)
-- **Thinking**: Adaptive (automatic), extended thinking (explicit)
+- **Context Window**: 1M tokens | **Max Output**: 128K tokens
+- **Pricing**: $10 / $50 per 1M tokens ($5/$25 batch)
+- **Key Feature**: Long-horizon autonomy -- sustained multiday, goal-directed runs with strong instruction retention
+- **Thinking**: Adaptive **always-on** (`disabled` → 400). Output: summarized-only (never raw CoT)
+- **Effort**: `low` | `medium` | `high` (default) | `xhigh` | `max`
 
 **Prompting Quick-Reference**:
-- Same core principles as Opus -- explicit instructions, explain motivation, XML tags
-- Design prompts assuming multiple simultaneous tool calls
-- Enable extended thinking for best coding performance
-- Monitor system resources at scale (parallel calls can overwhelm)
-- Excellent for multi-phase agentic workflows needing sustained focus
+- One brief instruction beats enumeration -- over-prescriptive prompts DEGRADE Fable 5
+- Give the reason, not only the request -- context helps it connect tasks to relevant info
+- Ground progress claims: "audit each claim against a tool result from this session"
+- Provide a memory file (one lesson/file, dedupe, delete wrong notes) -- notable performance boost
+- Use `send_to_user` tool for long async runs (delivers messages verbatim mid-turn)
+- Refactor old skills/prompts -- instructions tuned for prior models are often too prescriptive
 
 **Watch For**:
-- Most aggressive parallel tool calling (can bottleneck systems)
-- May need explicit concurrency limits: "Maximum 3 concurrent tool calls"
+- **Never instruct to echo/transcribe reasoning** → triggers `reasoning_extraction` refusal
+- Safety classifiers target offensive cyber, bio/life-sciences -- configure fallback to Opus 4.8
+- `stop_reason: "refusal"` is HTTP 200 success, not an error -- handle in harness
+- Rare early-stopping deep in sessions → add "You are operating autonomously" reminder
+- Can take unrequested actions (email drafts, git backups) → define explicit boundaries
+- Availability volatile (suspended Jun 12-Jul 1 2026) -- keep Opus 4.8 fallback wired
+
+### Claude Mythos 5
+
+**Released**: June 9, 2026 | **Model ID**: `claude-mythos-5` | Invite-only (Glasswing)
+
+Same specs/pricing as Fable 5 but **no safety classifiers**. Use when Fable 5 refuses legitimate work.
+
+### Claude Opus 5
+
+**Released**: July 2026 | **Model ID**: `claude-opus-5`
+
+- **Context Window**: 1M tokens (default and maximum) | **Max Output**: 128K tokens
+- **Pricing**: $5 / $25 per 1M tokens
+- **Key Feature**: Strongest on difficult agentic coding, code review with high precision+recall
+- **Thinking**: On by default; can disable only at effort `high` or below
+- **Effort**: `low` | `medium` | `high` (default) | `xhigh` | `max`
+
+**Prompting Quick-Reference**:
+- **Remove verification instructions** -- self-verifies without prompting; explicit checks cause over-verification (cost, no quality gain)
+- Prompt explicitly for conciseness -- default responses run longer than prior Opus
+- Constrain scope for narrow tasks -- can expand scope, adding unrequested steps
+- Cap subagent delegation for cost-sensitive work
+- Limit correction narration: "Only correct when the error would change code/conclusions/decisions"
+- Vision: strong on charts, docs, UI replication; iterative crop tool boosts further
+- `low`/`medium` effort produce strong quality at fraction of tokens -- start at default, sweep
+
+**Watch For**:
+- Delegates to subagents more readily -- add "Do not use subagents to verify your own work"
+- With thinking disabled: rare tool-call-as-text leakage + internal XML tags in output
+- Anthropic cut >80% of Claude Code's system prompt for Opus 5 with no eval loss -- less is more
+
+### Claude Opus 4.8
+
+**Released**: May 28, 2026 | **Model ID**: `claude-opus-4-8`
+
+- **Context Window**: 1M tokens | **Max Output**: 128K tokens
+- **Pricing**: $5 / $25 per 1M tokens (fast mode: $10/$50 via `speed:"fast"`)
+- **Thinking**: Adaptive **off unless `type:"adaptive"` set** | **Effort**: same range
+- ~4× less likely to let own code flaws pass vs 4.7
+- Dynamic workflows: plans + hundreds of parallel subagents in one session
+- Prompt-cache min lowered to 1,024 tokens (was 2,048)
+
+**Best For**: Enterprise coding, fast-mode agentic work, primary Fable 5 fallback target
+
+### Claude Sonnet 5
+
+**Released**: June 30, 2026 | **Model ID**: `claude-sonnet-5`
+
+- **Context Window**: 1M tokens | **Max Output**: 128K tokens
+- **Pricing**: $3 / $15 per 1M tokens (intro: $2/$10 until Aug 31, 2026)
+- **Thinking**: Adaptive **on by default** (`disabled` to turn off)
+- **Effort**: `low` | `medium` | `high` (default) | `xhigh` | `max`
+- New tokenizer: ~30% more tokens for same text vs Sonnet 4.6
+
+**Effort cross-mapping**: Sonnet 5 `medium` ≈ 4.6 `high` · Sonnet 5 `high` ≈ 4.6 `max`
+
+**Prompting Quick-Reference**:
+- More literal instruction following -- state scope explicitly ("Apply to every section, not just the first")
+- Calibrates response length to task complexity (shorter on simple, longer on complex)
+- With thinking off: less likely to reach for tools -- nudge explicitly
+- Higher-quality progress updates -- remove "summarize every N calls" scaffolding
+- Frontend/design may settle into default style -- specify concrete alternatives or ask for options first
+- Computer use: `computer_20251124`, up to 2576px / 3.75MP; 1080p = good balance
+
+**Watch For**:
+- `budget_tokens` → 400 | `temperature`/`top_p`/`top_k` → 400 | prefill → 400
+- `max_tokens` shared by thinking+text -- risk `stop_reason:"max_tokens"` truncation
+- Code review: follows "only report high-severity" literally -- ask for everything, filter separately
 
 ### Claude Haiku 4.5
 
-**Released**: September 2025 | **Model ID**: `claude-haiku-4-5-20251001`
+**Released**: October 2025 | **Model ID**: `claude-haiku-4-5-20251001`
 
-- **Context Window**: 200K tokens
-- **Key Feature**: First Haiku with extended thinking, near-frontier intelligence at lowest cost
-- **Strengths**: Fastest in family, exceptional value, ideal for sub-agent architectures
+- **Context Window**: 200K tokens | **Max Output**: 64K tokens | **Pricing**: $1 / $5
+- **NO CHANGE** from prior version. Manual extended thinking (budget_tokens). Old tokenizer.
 
-**Prompting Quick-Reference**:
-- Keep instructions concise but explicit
-- Prioritize bulletized constraints for clarity
-- Request explicit validation summaries
-- Best for real-time applications requiring speed
+**Best For**: Sub-agents, high-volume tasks, cost-sensitive deployments, routing
 
-### Claude 4.6 Family Comparison
+### Claude 5 Family Comparison
 
-| Feature | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
-|---------|-----------|------------|----------|
-| **Adaptive thinking** | No | Yes | Yes |
-| **Effort parameter** | No | No | Yes (only model) |
-| **Thinking preservation** | No | Yes | Yes |
-| **Programmatic tools** | No | Beta | Beta |
-| **Tool search (100+)** | No | Beta | Beta |
-| **Context window** | 200K | 200K / 1M (beta) | 200K |
-| **Best for** | Sub-agents, high-volume | Coding, complex agents | Peak intelligence |
-| **Relative cost** | $ | $$ | $$$$ |
+| Feature | Fable 5 | Opus 5 | Opus 4.8 | Sonnet 5 | Haiku 4.5 |
+|---------|---------|--------|----------|----------|-----------|
+| Context | 1M | 1M | 1M | 1M | 200K |
+| Max Output | 128K | 128K | 128K | 128K | 64K |
+| Thinking default | Always-on | On (off ≤high) | Off unless set | On by default | Manual budget |
+| Effort range | low→max | low→max | low→max | low→max | N/A |
+| Sampling params | → 400 | → 400 | → 400 | → 400 | Accepted |
+| Prefill | → 400 | → 400 | → 400 | → 400 | Accepted |
+| Tokenizer | New (+30%) | New (+30%) | New (+30%) | New (+30%) | Old |
+| Fast mode | No | No | Yes | No | No |
+| Safety classifiers | Yes | No | No | Yes (cyber) | No |
+| Price in/out | $10/$50 | $5/$25 | $5/$25 | $3/$15 | $1/$5 |
 
-### Key Claude Insight
+### Key Claude Insight (July 2026)
 
-Claude models excel when you explain WHY you want something, not just WHAT. They generalize from explanatory context. Native parallel tool calling is aggressive -- design prompts assuming multiple simultaneous actions.
-
-**Adaptive thinking** (new in 4.6) means Opus and Sonnet now autonomously decide when to engage deep reasoning, making explicit `/think` commands optional for most tasks. The model allocates reasoning effort proportional to task complexity.
+**"Prompting Opus 5 is a subtraction exercise"** (Anthropic cut >80% of Claude Code's system prompt with no eval loss). The Claude 5 family requires:
+- **Remove verification/self-check instructions** -- Opus 5 and Fable 5 self-verify natively
+- **Brief instructions beat enumeration** -- Fable 5 follows one brief instruction better than itemized lists
+- **Effort is the primary cost lever** -- `low`/`medium` on current models often exceed `xhigh` on prior
+- **No sampling params, no prefill, no manual budgets** on any current model (except Haiku 4.5)
+- **Thinking on by default** for Fable 5 (always), Opus 5, Sonnet 5 -- budget `max_tokens` for thinking+text
+- **New tokenizer** on all except Haiku 4.5 -- recount tokens when migrating from 4.6-era
+- **Fable 5 memory system** -- provide a notes file; notable performance boost
+- **send-to-user tool** -- for long async agents, deliver messages verbatim mid-turn
+- **Fable 5 as orchestrator, Sonnet 5/Opus 4.8 as executor** -- dominant 2026 cost pattern
 
 ---
 
 ## 2. OpenAI (GPT-5.x Family)
 
-### GPT-5.2 Thinking
+### GPT-5.6 Sol / Terra / Luna
 
-**Released**: December 2025 | **SOTA for chatbot use**
+**Released**: July 9, 2026 | **GA** on Responses, Chat Completions, and Batch APIs
 
-- **Context Window**: 128K tokens
-- **Key Feature**: Deep reasoning mode ("Thinking") that produces the highest-quality conversational responses of any model
-- **Strengths**: Top-tier reasoning, cleaner formatting, less verbosity, strongest instruction adherence, excellent tool grounding
-- **Reasoning Profiles**: `"light"` | `"balanced"` | `"deep"`
+| Variant | Model ID | Tier |
+|---------|----------|------|
+| **Sol** | `gpt-5.6-sol` (default alias `gpt-5.6`) | Frontier capability |
+| **Terra** | `gpt-5.6-terra` | Balanced capability/cost |
+| **Luna** | `gpt-5.6-luna` | High-volume |
+
+- **Context Window**: 1,050,000 tokens (max input 922,000) — same across all three
+- **Max Output**: 128,000 tokens
+- **Pricing (Sol)**: $5 in / $0.50 cached / $30 out per 1M
+- **Reasoning**: `reasoning.effort` = `none`/`low`/`medium` (default)/`high`/`xhigh`/`max` — **`max` is new in this release**
+- Persisted reasoning across turns supported
+- Multi-agent orchestration in beta (Responses API only)
+
+**Prompting Quick-Reference** (official guidance):
+- **Lean prompts win**: OpenAI reports 10-15% eval score gains with 41-66% fewer tokens
+- **State each instruction once** — repetition degrades performance
+- **Don't over-repeat caution phrases** ("ask first", "wait for approval") — triggers unnecessary approval prompts
+- **Model is more concise by default than 5.5** — blunt "be concise" instructions can over-truncate; use `text.verbosity` instead
+
+**Watch For**:
+- **Long-context repricing**: >272K input tokens bills **2x input / 1.5x output for the entire request**, not just the overage
+- Cache writes bill at 1.25x standard input rate
+
+### GPT-5.5
+
+**Current widely-deployed flagship** prior to 5.6.
+
+- **Context Window**: 1,050,000 tokens | **Max Output**: 128,000
+- **Reasoning**: `reasoning.effort` = `none`/`low`/`medium`/`high`/`xhigh`
+- **Verbosity**: `text.verbosity` = `low`/`medium`/`high`
+- **API**: Responses API is the current recommended surface
+
+### GPT-5.2 Thinking (Legacy)
+
+**Released**: December 2025 | Superseded by GPT-5.5 / 5.6
+
+- **Context Window**: 400K tokens
+- **Reasoning**: `reasoning.effort` = `none` (default) / `low` / `medium` / `high` / `xhigh`
+- **Note**: earlier editions of this catalog listed a `reasoning_profile: light|balanced|deep` parameter here. No such parameter exists in OpenAI's GPT-5.2 docs -- see 08-gpt5-practices_v5.md.
 
 **Prompting Quick-Reference**:
 - Keep prompts MINIMAL and direct -- less is more
 - Crisp tool descriptions (1-2 sentences)
-- Use `reasoning_profile: "deep"` with verification scaffolds for high-assurance tasks
+- Use `reasoning.effort: "high"` or `"xhigh"` with verification scaffolds for high-assurance tasks
 - Avoid over-prompting (reduces quality)
 - System messages for role definition
 - JSON mode for structured outputs
@@ -148,9 +243,9 @@ Claude models excel when you explain WHY you want something, not just WHAT. They
 
 ### GPT-5.1
 
-**Released**: October 2025
+**Released**: November 13, 2025
 
-- **Context Window**: 128K tokens
+- **Context Window**: 400K tokens
 - **Key Feature**: `"none"` reasoning mode for ultra-low-latency; auto-calibrates reasoning depth
 - **Strengths**: Flexible reasoning modes, calibrated to prompt difficulty
 
@@ -158,7 +253,7 @@ Claude models excel when you explain WHY you want something, not just WHAT. They
 
 **Released**: August 2025
 
-- **Context Window**: 128K tokens
+- **Context Window**: 400K tokens
 - **Key Feature**: Unified flagship, enterprise-grade alignment
 - **Strengths**: All benchmarks, video reasoning, biomedical analysis
 
@@ -170,9 +265,9 @@ Less is more. Agentic persistence reminders are critical at minimal reasoning le
 
 ## 3. Google (Gemini 3.1 Family)
 
-### Gemini 3.1 Pro
+### Gemini 3.1 Pro (Preview)
 
-**Released**: February 19, 2026 | **#1 on major benchmarks**
+**Released**: February 19, 2026 as Preview | Model ID `gemini-3.1-pro-preview` | **#1 on major benchmarks**
 
 - **Context Window**: 1M tokens
 - **Output**: 64K tokens
@@ -180,7 +275,7 @@ Less is more. Agentic persistence reminders are critical at minimal reasoning le
 - **Thinking**: `thinking_level`: `"low"` | `"high"` (default)
 
 **Prompting Quick-Reference**:
-- **Temperature MUST be 1.0** -- lowering causes loops/degraded performance
+- **OMIT `temperature`/`top_p`/`top_k`** -- default 1.0 is the recommended setting; lowering causes loops/degraded performance
 - Favor DIRECTNESS over persuasion (treats prompts as executable instructions)
 - NO conversational fluff ("please", "kindly", "if you could")
 - Context FIRST, questions LAST for long contexts
@@ -197,17 +292,17 @@ Less is more. Agentic persistence reminders are critical at minimal reasoning le
 
 ### Gemini 3.1 Flash-Lite
 
-**Released**: March 4, 2026
+**Released**: Preview March 3, 2026 | Stable GA May 7, 2026
 
 - **Context Window**: 1M tokens
-- **Output**: 32K tokens
+- **Output**: 64K tokens
 - **Key Feature**: Real-time optimized with near-Pro quality at fraction of cost
 - **Strengths**: Latency-optimized, rapid iteration, streaming outputs
 
 **Prompting Quick-Reference**:
 - Concise task briefs with optional enrichment sections
 - Define response schemas to maintain structure at high speed
-- Same temperature=1.0 requirement
+- Same guidance: OMIT temperature/top_p/top_k (use defaults)
 
 ### Gemini 2.5 Pro / Flash
 
@@ -223,67 +318,97 @@ Gemini 3.x treats prompts as executable instructions, not conversation. DO NOT u
 
 ## 4. xAI (Grok Family)
 
-### Grok 4.20 Beta 2
+### Grok 4.5
 
-**Released**: February 2026
+**Model ID**: `grok-4.5` (aliases `grok-4.5-latest`, `grok-build-latest`)
 
-- **Context Window**: 2M tokens (largest available)
-- **Key Feature**: Massive context with real-time data integration
-- **Strengths**: Live data workflows, tool-use reinforcement, long-context synthesis
+- **Context Window**: 500,000 tokens
+- **License**: Closed, API-only. Available on API, Grok Build, Cursor
+- **Reasoning**: `reasoning_effort` = `low`/`medium`/`high` (default `high`). **Reasoning cannot be disabled.**
+
+**Pricing (tiered by prompt size)**:
+
+| Prompt size | Input | Cached | Output |
+|-------------|-------|--------|--------|
+| <200K | $2.00 | $0.30 | $6.00 |
+| ≥200K | $4.00 | $0.60 | $12.00 |
+
+**Watch For**:
+- **Crossing 200K reprices the entire request**, not just the overage — budget accordingly
+- `presence_penalty`, `frequency_penalty`, and `stop` are **rejected as errors**
+- No official prompting guide published
 
 **Prompting Quick-Reference**:
-- Leverage massive 2M context with layered sectioning
+- Structure large contexts with hierarchical headings
 - Clear, direct tool instructions
 - Request verification steps for quantitative reasoning
-- Structure large contexts with hierarchical headings
 
-### Grok 4.1 Fast / Grok 4 Fast
+### Grok 4.x Earlier / Fast Variants
 
-Earlier iterations with same 2M context. Grok 4 Fast introduced unified reasoning/non-reasoning model.
+Earlier iterations. Grok 4 Fast introduced the unified reasoning/non-reasoning model.
 
 ---
 
 ## 5. Chinese Frontier Models
 
-### DeepSeek V3.2
+### DeepSeek V4
 
-- **Context Window**: 512K tokens
-- **Key Feature**: Cost-effective frontier-level reasoning
-- **Strengths**: Advanced reasoning, strong coding, bilingual (EN/CN)
-- **Status**: V4 release imminent
+- **Context Window**: 1M tokens
+- **Pricing**: V4 Flash $0.14/$0.28 · V4 Pro $0.435/$0.87 per 1M
+- **License**: MIT (open weights)
+- **Key Feature**: Frontier-level reasoning at lowest cost tier
+- **Reasoning**: `reasoning_effort`: high (default) / max
 
-**Prompting**: Clear, structured prompts. Specify language requirements explicitly.
+**Prompting**: Clear, structured prompts. Enable thinking via `extra_body={"thinking":{"type":"enabled"}}` -- NOT raw `<think>` tags. **Gotcha**: must echo `reasoning_content` on tool-result turns or the API returns 400. Thinking mode ignores sampling params.
 
-### GLM-5 (Zhipu AI)
+### GLM-5.2 (Zhipu AI)
 
-**Released**: February 2026
+- **Context Window**: 1M tokens
+- **License**: MIT (top open-weight model)
+- **Key Feature**: Best open-weight option; High/Max reasoning modes
+- **Reasoning**: `reasoning_effort`
 
-- **Context Window**: 512K tokens
-- **Parameters**: 744B (one of the largest dense models)
-- **Key Feature**: Enterprise-grade bilingual reasoning
-- **Strengths**: Financial analysis, tool-use reliability, compliance
+**Prompting**: Provide bilingual glossaries for multilingual output. Define explicit function-calling payloads. **Gotcha**: preserved thinking blocks must match exactly when replayed.
 
-**Prompting**: Provide bilingual glossaries for multilingual output. Enumerate numerical assumptions for quantitative tasks. Define explicit function-calling payloads.
-
-### Qwen 3.5 (Alibaba)
-
-**Released**: February 2026
+### Qwen 3.7 (Alibaba)
 
 - **Context Window**: 256K tokens
-- **Key Feature**: 201 language support (broadest multilingual coverage)
-- **Strengths**: Strong general capabilities, competitive benchmarks
+- **Availability**: Flagship is now **closed/API-only**; open option is Qwen3.6-35B-A3B (Apache 2.0)
+- **Key Feature**: Broadest multilingual coverage
+- **Reasoning**: `enable_thinking` toggle
 
 **Prompting**: Direct, clear instructions with structured context. Specify target language explicitly.
 
-### Kimi K2.5 (Moonshot AI)
+### Kimi K3 (Moonshot AI)
 
-**Released**: January 2026
+- **Context Window**: 1,048,576 tokens (1M)
+- **Pricing**: Input $3.00 (cache miss) / $0.30 (cache hit) · Output $15.00 per 1M — flat, no tiering
+- **License**: **Open weights** under custom "Kimi K3 License"
+- **Architecture**: MoE, 2.8T total / 104B activated params, 93 layers (69 KDA + 24 Gated MLA attention), 896 experts, MoonViT-V2 vision encoder, MXFP4/MXFP8 quantization-aware training
+- **Reasoning**: **Always-on thinking**; returns `reasoning_content`. `reasoning_effort` = `low`/`high`/`max` (default `max`)
+- **Key Feature**: Long-horizon coding and end-to-end knowledge work, native visual understanding
+
+**Watch For**: **Preserved thinking history mode** — full assistant messages (including `reasoning_content` and `tool_calls`) must be replayed **verbatim** on later turns.
+
+**Prompting**: Designed for extended coding sessions and multi-step knowledge tasks. Native vision means no separate image pipeline needed.
+
+### Kimi K2.6 (Moonshot AI)
 
 - **Context Window**: 2M tokens
-- **Key Feature**: Agent Swarm -- native multi-agent orchestration
-- **Strengths**: Exceptional long-context handling, information synthesis, agent coordination
+- **Key Feature**: **Agent Swarm v2** -- 300 sub-agents, 4,000 steps, ~13-hour runs
+- **Input**: Text, image, and video; thinking and non-thinking modes
+- **Variant**: K2.7-Code (thinking forced ON)
+- **Sampling**: temp 1.0 for thinking mode / 0.6 for instant
 
-**Prompting**: Leverage ultra-long context for document analysis. Structure information hierarchically. Agent Swarm capabilities enable native multi-agent task decomposition.
+**Prompting**: Leverage ultra-long context for document analysis. Agent Swarm enables native multi-agent task decomposition at scale unmatched by other providers. Models do not access external resources by default — extend via official tools or custom tool calls.
+
+### MiniMax M3
+
+- **Context Window**: 512K guaranteed
+- **Pricing**: ~$0.30/$1.20 per 1M
+- **Key Feature**: Budget frontier coding + native multimodal
+
+**Prompting**: Plan against the 512K guaranteed context. Standard structured prompting.
 
 ---
 
@@ -291,7 +416,7 @@ Earlier iterations with same 2M context. Grok 4 Fast introduced unified reasonin
 
 ### Llama 4 Maverick (Meta)
 
-**Released**: March 2026
+**Released**: April 5, 2025
 
 - **Context Window**: 1M tokens
 - **Architecture**: Mixture of Experts (MoE)
@@ -302,9 +427,9 @@ Earlier iterations with same 2M context. Grok 4 Fast introduced unified reasonin
 
 ### Llama 4 Scout (Meta)
 
-**Released**: March 2026
+**Released**: April 5, 2025
 
-- **Context Window**: 1M tokens
+- **Context Window**: 10M tokens
 - **Architecture**: MoE, smaller expert count than Maverick
 - **Key Feature**: Efficient open-weight model for deployment at scale
 - **Strengths**: Lower compute requirements, strong performance per FLOP
@@ -327,27 +452,29 @@ Earlier iterations with same 2M context. Grok 4 Fast introduced unified reasonin
 
 | Use Case | Primary Pick | Alternative | Why |
 |----------|-------------|-------------|-----|
-| **Complex reasoning** | Opus 4.6 | GPT-5.2 Thinking | Peak intelligence, adaptive thinking |
-| **Software development** | Sonnet 4.6 | GPT-5.2 Thinking | SOTA coding, extended autonomy |
-| **Massive document analysis** | Gemini 3.1 Pro | Grok 4.20 | 1M-2M context windows |
-| **Real-time / low latency** | GPT-5.3 Instant | Haiku 4.5 | Ultra-fast responses |
-| **High-volume / sub-agents** | Haiku 4.5 | GPT-5.3 Instant | Speed + quality at low cost |
-| **Multimodal (text+image+video)** | Gemini 3.1 Pro | Opus 4.6 | Native multimodal processing |
-| **Cost-sensitive** | DeepSeek V3.2 | Haiku 4.5 | Frontier quality at low cost |
-| **Multilingual (200+ langs)** | Qwen 3.5 | Gemini 3.1 Pro | Broadest language coverage |
-| **Agent orchestration** | Sonnet 4.6 | Kimi K2.5 | Parallel tools, Agent Swarm |
-| **Self-hosted / open-weight** | Llama 4 Maverick | Mistral Large 3 | Full control, customizable |
-| **EU compliance** | Mistral Large 3 | Qwen 3.5 | European sovereignty |
-| **Real-time data** | Grok 4.20 | Gemini 3.1 Pro | Live data integration |
+| **Complex reasoning** | Fable 5 | GPT-5.5, Opus 4.8 | Highest capability, long-horizon autonomy |
+| **Software development** | Opus 5 (effort: xhigh) | Sonnet 5 | SOTA coding, self-verification, code review |
+| **Massive document analysis** | Llama 4 Scout (10M) | 1M class: Claude 5-gen, GPT-5.5, Gemini 3.5 | Context size |
+| **Real-time / low latency** | Mercury 2 | Haiku 4.5, Gemini 3.5 Flash | >1000 tok/s (diffusion LLM) |
+| **High-volume / sub-agents** | Haiku 4.5 | Sonnet 5 | Speed + quality at low cost |
+| **Cost-sensitive** | DeepSeek V4 Flash ($0.14/$0.28) | MiniMax M3, GLM-5.2 free tiers | Frontier quality at lowest cost |
+| **Multilingual** | Qwen 3.7 (API) | Mistral Large 3 | Broadest coverage |
+| **Agent orchestration** | Kimi K2.6 (Swarm v2) | Opus 5, Fable 5 | 300 agents, 4K steps |
+| **Self-hosted / open-weight** | GLM-5.2 (MIT, 1M) | DeepSeek V4 Pro, Kimi K2.7-Code | Top open-weight |
+| **EU compliance** | Mistral Large 3 | -- | European sovereignty |
+| **Budget coding** | DeepSeek V4 Pro ($0.44/$0.87) | MiniMax M3 | Near-frontier at fraction of cost |
+
+> Capability is commoditizing: 5 models within 0.4 pts SWE-bench across a 5x price range -- price/routing now differentiates.
 
 ### By Budget
 
 | Tier | Models | When to Use |
 |------|--------|-------------|
-| **Premium** | Opus 4.6, GPT-5.2 Thinking | Maximum quality, complex tasks |
-| **Standard** | Sonnet 4.6, Gemini 3.1 Pro | Production workloads, coding |
-| **Economy** | Haiku 4.5, GPT-5.3 Instant, Flash-Lite | High-volume, latency-critical |
-| **Budget** | DeepSeek V3.2, Llama 4, Mistral Large 3 | Cost-optimized, self-hosted |
+| **Frontier** | Fable 5 ($10/$50) | Hardest problems, multiday autonomous runs |
+| **Premium** | Opus 5, Opus 4.8, GPT-5.5 | Agentic coding, enterprise, complex tasks |
+| **Standard** | Sonnet 5, Gemini 3.1 Pro | Production workloads, daily coding |
+| **Economy** | Haiku 4.5, Gemini 3.5 Flash | High-volume, latency-critical |
+| **Budget** | DeepSeek V4 Flash, MiniMax M3, GLM-5.2 | Cost-optimized, self-hosted |
 
 ---
 
@@ -360,8 +487,8 @@ Most providers offer prompt caching for repeated prefixes:
 | Provider | Feature | Savings | How |
 |----------|---------|---------|-----|
 | Anthropic | Prompt caching | Up to 90% on cached tokens | `cache_control` breakpoints in messages |
-| OpenAI | Automatic caching | Up to 50% | Automatic for repeated prefixes |
-| Google | Context caching | Up to 75% | Explicit cache creation via API |
+| OpenAI | Automatic caching | Up to 90% on cached tokens | Automatic for repeated prefixes |
+| Google | Context caching | Up to 90% on cached tokens (excl. storage) | Explicit cache creation via API |
 
 **Cache-Friendly Prompt Structure**:
 ```
@@ -391,51 +518,79 @@ Most providers offer prompt caching for repeated prefixes:
 
 ---
 
-## 9. Deprecated & Removed Models
+## 9. Deprecated & Legacy Models
 
-| Model | Status | Replacement |
-|-------|--------|-------------|
-| GPT-4o | Removed from ChatGPT (Aug 2025) | GPT-5.x family |
-| GPT-4 | Removed 2025 | GPT-5.x family |
-| Claude 4.5 family | Superseded (still available) | Claude 4.6 family |
-| Gemini 3.0 Pro | Superseded | Gemini 3.1 Pro |
-| Gemini 2.5 Flash | Available but superseded | Gemini 3.1 Flash-Lite |
+### Claude Legacy
 
-**Notable removal**: GPT-5 Mini does not exist and was erroneously included in previous versions.
+| Model | API ID | Notes |
+|-------|--------|-------|
+| Opus 4.7 | `claude-opus-4-7` | Legacy; fast mode removed 2026-07-24 |
+| Opus 4.6 | `claude-opus-4-6` | Fast mode disabled 2026-06-29 |
+| Opus 4.5 | `claude-opus-4-5-20251101` | Last Opus with manual thinking budgets |
+| Sonnet 4.6 | `claude-sonnet-4-6` | Replaced by Sonnet 5; old tokenizer |
+| Sonnet 4.5 | `claude-sonnet-4-5-20250929` | 200K context |
+| **Opus 4.1** | `claude-opus-4-1-20250805` | **Deprecated, retires 2026-08-05** |
+
+Retired (except select clouds): Opus 4, Sonnet 4, Haiku 3.5.
+
+### Other Legacy
+
+| Model | Status | Migration Target |
+|-------|--------|-----------------|
+| GPT-4o / GPT-4 | Removed 2025 | GPT-5.5+ |
+| Claude 4.5 family | Superseded | Claude 5 family |
+| Gemini 2.x | Available but superseded | Gemini 3.5 Flash |
+| DeepSeek V3.x | Available | DeepSeek V4 |
+| Llama 3.x | Available | Llama 4 (frozen -- Meta frontier went closed with Muse Spark) |
 
 ---
 
-## 10. 2026 Paradigm Updates
+## 10. 2026 Paradigm Updates (July 2026)
 
-### Adaptive Thinking (Claude 4.6)
+### Adaptive Thinking Is Universal
 
-The 4.6 models introduce **adaptive thinking**: the model autonomously decides when and how much to reason, allocating compute proportional to task complexity. This eliminates the need for explicit thinking mode toggling in most cases. Extended thinking (`/think`, `/megathink`, `/ultrathink`) remains available for explicit control.
+All current Claude models (except Haiku 4.5) use adaptive thinking. Manual thinking budgets (`budget_tokens`) → 400 on all current models except Haiku 4.5. Thinking defaults now differ per model: always-on (Fable 5), on-by-default (Opus 5, Sonnet 5), off-unless-set (Opus 4.8). Cross-provider convergence: GPT-5.5 `reasoning.effort`, Gemini 3.x `thinking_level`, DeepSeek `reasoning_effort`.
 
-### Context Compaction
+### Effort as Primary Cost Lever
 
-Server-side context summarization enables effectively infinite conversations. When context approaches limits, the system automatically compresses prior messages while preserving key information. Design prompts assuming this capability:
-- Save critical state to files/memory before context refreshes
-- Don't stop tasks early due to token budget concerns
-- Use structured state files (JSON) for data that must survive compaction
+`output_config: {effort: "..."}` is the main knob for intelligence vs cost/latency. `low`/`medium` on current models often exceed `xhigh` on prior models. Match effort to task difficulty, not model tier.
+
+### Context Compaction Is a Safety Surface
+
+Compaction silently evicts standing rules (tool-call violations 0%→30-59%, arXiv:2606.22528). **Re-pin governance rules/permissions after every compaction.** LLM summarizers are lossy and ignore volume instructions. Prefer file-backed state + git checkpoints over long conversation memory.
+
+### Sampling Params Are Dying
+
+`temperature`/`top_p`/`top_k` → 400 on Claude current-gen and Sonnet 5. Gemini docs: remove them. DeepSeek thinking: ignores them. Steer style via prompt, not sampling.
+
+### Prefill Removed
+
+Prefilled assistant responses (last turn) → 400 on Claude 4.6+ and Mythos. Migrate to Structured Outputs, `output_config.format`, or system instructions.
 
 ### Agent Coordination as Table Stakes
 
-Multi-agent orchestration is now standard across providers:
-- **Claude 4.6**: Native parallel tool calling, subagent delegation
-- **GPT-5.x**: Tool orchestration with reasoning profiles
-- **Gemini 3.1**: Agent-ready with massive context
-- **Kimi K2.5**: Native Agent Swarm architecture
-- **Llama 4**: Open-weight agent framework support
+Multi-agent orchestration is standard:
+- **Fable 5**: Orchestrator role, parallel subagent dispatch, long-lived agents for cache savings
+- **Opus 5**: Writer-verifier patterns, strong multi-agent coordination
+- **Kimi K2.6**: Agent Swarm v2 (300 agents, 4,000 steps, ~13-hr runs)
+- **GPT-5.5**: Tool orchestration with reasoning profiles
+- Dominant pattern: **frontier model as orchestrator, cheaper model as executor**
 
-Design agentic systems assuming the model can coordinate multiple tools and subtasks without explicit orchestration prompts.
+### New Anti-Pattern: Overthinking DoS
+
+Adversarial logically-inconsistent prompts can force reasoning models into runaway chain-of-thought -- a denial-of-service vector via inflated compute/cost (ICML 2026, Zhejiang/Alibaba). Cap thinking budgets in production.
 
 ---
 
 ## References
 
-- [Anthropic Claude 4.6 Documentation](https://docs.anthropic.com)
+- [Anthropic Claude 5 Documentation](https://docs.anthropic.com)
+- [Prompting Claude Fable 5](https://docs.anthropic.com/en/build-with-claude/prompt-engineering/prompting-claude-fable-5)
+- [Prompting Claude Opus 5](https://docs.anthropic.com/en/build-with-claude/prompt-engineering/prompting-claude-opus-5)
+- [Prompting Claude Sonnet 5](https://docs.anthropic.com/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5)
+- [Claude Prompting Best Practices](https://docs.anthropic.com/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 - [OpenAI GPT-5 Platform Documentation](https://platform.openai.com/docs)
-- [Google Gemini 3.1 Prompting Guide](https://ai.google.dev/gemini-api/docs)
+- [Google Gemini 3.x Prompting Guide](https://ai.google.dev/gemini-api/docs)
 - [xAI Grok Documentation](https://docs.x.ai)
 - [Meta Llama 4 Model Card](https://llama.meta.com)
 - [Mistral Large 3 Documentation](https://docs.mistral.ai)

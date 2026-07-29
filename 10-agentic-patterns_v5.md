@@ -30,7 +30,21 @@ This module is the **canonical home** for tool orchestration, sub-agent design, 
 
 ## 2. Tool Description Patterns
 
-### Optimal Format: 1-2 Sentences
+### Optimal Format Is Provider-Specific
+
+**There is no universal rule here -- vendors disagree, and following the wrong
+one costs you accuracy:**
+
+| Provider | Official guidance |
+|----------|-------------------|
+| OpenAI (GPT-5.x) | Keep descriptions **crisp**; verbose descriptions degrade quality |
+| Anthropic | Describe **what the tool does *and* when to use it**; "when to use" text is recommended for resolving tool-selection ambiguity |
+| Google (Gemini) | **No maximum**. Detailed descriptions with capabilities, usage conditions, and examples are recommended |
+
+The guidance below (brevity-first) reflects OpenAI's stance. On Claude and
+Gemini, prefer describing selection conditions explicitly.
+
+### Brevity-First Format (OpenAI): 1-2 Sentences
 
 ```json
 {
@@ -72,9 +86,9 @@ This module is the **canonical home** for tool orchestration, sub-agent design, 
 | Anti-Pattern | Problem | Fix |
 |--------------|---------|-----|
 | Multi-paragraph descriptions | Token waste, confuses models | 1-2 sentences |
-| Usage instructions in description | Redundant (models infer) | Remove |
+| Usage instructions in description | Redundant on GPT-5.x; **recommended by Anthropic and Google** | Remove for OpenAI; keep elsewhere |
 | Edge case handling in description | Over-constrains | Handle in code |
-| "You should use this when..." | Redundant with reasoning | Remove |
+| "You should use this when..." | Redundant on GPT-5.x; **Anthropic recommends it** when tool choice is ambiguous | Judge per provider |
 
 ---
 
@@ -158,13 +172,15 @@ Gather this information (order doesn't matter):
 
 ### Concurrency Limits (Claude)
 
-Sonnet 4.6 can bottleneck systems with aggressive parallelization:
+Claude 5-family models emit multiple tool calls in one turn when beneficial. **Your application decides** whether to run them concurrently, sequentially, or mixed -- the model does not execute them. Concurrent execution is where the bottleneck risk lives. Effort level drives tool usage — `high`/`xhigh` show substantially more tool calls in agentic search and coding.
 
 ```xml
 <execution_constraints>
 Maximum 3 concurrent tool calls. Wait for results before next batch.
 </execution_constraints>
 ```
+
+Sonnet 5 is more agentic than Sonnet 4.6 by default. With thinking disabled it is *less* likely to reach for tools — add an explicit nudge if you rely on tool calls with thinking off.
 
 ---
 
@@ -317,7 +333,71 @@ When receiving results:
 
 ---
 
-## 8. IDE Agent Patterns
+## 8. send-to-user Tool Pattern (Claude Fable 5)
+
+For long async agents, a tool that delivers messages verbatim mid-turn without ending it:
+
+```json
+{
+  "name": "send_to_user",
+  "description": "Display a message directly to the user. Use for progress updates, partial results, or content the user must see exactly as written before the task finishes.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "message": { "type": "string", "description": "Content to display." }
+    },
+    "required": ["message"]
+  }
+}
+```
+
+Pair with system prompt guidance:
+```
+Between tool calls, when you have content the user must read verbatim,
+call send_to_user. Use only for user-facing content, not narration or reasoning.
+```
+
+Tool inputs are never summarized, so content arrives intact. Defining the tool alone is insufficient -- Fable 5 rarely calls it without explicit elicitation in the system prompt.
+
+## 9. Memory Systems (Fable 5 / Long-Horizon)
+
+Fable 5 performs notably better with persistent memory:
+
+```
+Store one lesson per file with a one-line summary at the top.
+Record corrections and confirmed approaches alike, including why they mattered.
+Don't save what the repo or chat history already records.
+Update existing notes rather than creating duplicates.
+Delete notes that turn out to be wrong.
+```
+
+Bootstrap from existing history:
+```
+Reflect on previous sessions. Use subagents to identify core themes
+and lessons, and store them in [X]. Reference [X] for future use.
+```
+
+The memory tool pairs well with context awareness for managing context transitions.
+
+## 10. Orchestrator + Executor Pattern (2026)
+
+Dominant cost pattern: **frontier model as orchestrator, cheaper model as executor**.
+
+- Fable 5 orchestrates, Sonnet 5/Opus 4.8 executes
+- Long-lived subagents for cache-read savings (avoid bottlenecking on slowest)
+- Asynchronous communication between orchestrator and subagents (don't block)
+- Separate verification from writing (fresh-context verifier subagents outperform self-critique)
+
+For cost-sensitive workloads, cap delegation explicitly:
+```
+Delegate to a subagent only for large tasks that are genuinely independent.
+Do not delegate work you can finish in a handful of tool calls.
+Do not use subagents to verify your own work.
+```
+
+---
+
+## 11. IDE Agent Patterns
 
 ### CLAUDE.md Best Practices
 
@@ -382,30 +462,40 @@ description: [What]. USE WHEN [triggers].
 
 ---
 
-## 9. Model-Specific Agentic Guidance
+## 12. Model-Specific Agentic Guidance
 
-### Claude 4.6
+### Claude 5 Family
+
+Per-model delegation behavior:
+
+| Model | Delegation Style | Watch For |
+|-------|-----------------|-----------|
+| **Fable 5** | Most aggressive parallel dispatch; supports long-lived subagents | Prefer async communication over blocking on each return |
+| **Opus 5** | Delegates readily; effective writer-verifier patterns, few overwrite conflicts | Cap delegation for cost; don't let it use subagents to verify its own work |
+| **Opus 4.8** | Dynamic workflows: hundreds of parallel subagents in one session | Codebase-scale migrations |
+| **Sonnet 5** | More agentic than 4.6; tool usage scales with effort | With thinking OFF, needs explicit tool nudge |
+
 - **Strengths**: Long-horizon reasoning, native parallel tool calling, adaptive thinking, subagent delegation
-- **Watch**: Opus overtriggers on tools, Sonnet aggressive parallelization
-- **Key XML blocks**: See 06-claude-practices_v5.md Section 4-5
+- **Watch**: Opus 5 and Fable 5 both delegate more readily than prior models
+- **Key XML blocks**: See 06-claude-practices_v5.md Section 4-5, 8
 
 ### GPT-5.x
 - **Strengths**: Clean instruction following, minimal verbosity
-- **Watch**: Persistence at light/balanced reasoning levels
-- **Key**: Add persistence reminders for long tasks
+- **Watch**: Persistence at low/medium `reasoning_effort`
+- **Key**: Use official agentic contract tags (`<output_contract>`, `<tool_persistence_rules>`, `<verification_loop>`)
 
-### Gemini 3.1
+### Gemini 3.x
 - **Strengths**: Massive context (1M), direct instruction execution
-- **Watch**: Temperature=1.0 required, no conversational language
-- **Key**: Context first, questions last; be direct
+- **Watch**: OMIT sampling params; return thought signatures in stateless multi-turn function calling
+- **Key**: Context first, questions last; behavioral constraints TOP, formatting END
 
-### Kimi K2.5
-- **Strengths**: Native Agent Swarm architecture, 2M context
-- **Key**: Built-in multi-agent orchestration
+### Kimi K2.6
+- **Strengths**: Agent Swarm v2 (300 sub-agents, 4,000 steps, ~13-hour runs), 2M context
+- **Key**: Built-in multi-agent orchestration at a scale unmatched elsewhere
 
 ---
 
-## 10. Agentic Anti-Patterns
+## 13. Agentic Anti-Patterns
 
 | Anti-Pattern | Problem | Fix |
 |--------------|---------|-----|
@@ -415,11 +505,11 @@ description: [What]. USE WHEN [triggers].
 | No state tracking | Can't resume, loses progress | Checkpoint pattern |
 | Over-parallelization | System bottlenecks | Explicit concurrency limits |
 | Micromanaging reasoning | Degrades native capabilities | Goal-oriented prompting |
-| Verbose tool descriptions | Reduces performance | 1-2 sentences max |
+| Verbose tool descriptions | Reduces performance **on GPT-5.x only** | 1-2 sentences for OpenAI; detail is fine on Claude/Gemini |
 
 ---
 
-## 11. Agentic Evaluation Metrics
+## 14. Agentic Evaluation Metrics
 
 | Metric | Definition | Target |
 |--------|------------|--------|

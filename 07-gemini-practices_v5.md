@@ -1,13 +1,14 @@
-# Gemini Practices (Google, March 2026)
+# Gemini Practices (Google, July 2026)
 
 This module merges Gemini Deep Research and Gemini 3.x prompting guidance into a single reference for all Google Gemini models.
 
 > **Model specs**: See 03-model-catalog_v5.md for Gemini family data.
 > **Anti-patterns**: See 02-techniques-patterns_v5.md (canonical).
+> **Current models covered**: Gemini 3.5 Flash (`thinking_level` default = `medium`; knowledge cutoff January 2025 -- explicitly state the current year/date for time-sensitive queries) and Gemini 3.1 Pro Preview (`gemini-3.1-pro-preview`). Guidance below applies to both unless noted.
 
 ---
 
-## 1. Core Prompting Principles (Gemini 3.1)
+## 1. Core Prompting Principles (Gemini 3.x)
 
 ### 1.1 Be Precise and Direct
 
@@ -27,20 +28,25 @@ Gemini 3.x has native advanced reasoning. Stop using complex CoT from the 2.x er
 
 ### 1.3 Use the `thinking_level` Parameter
 
-Controls reasoning depth via API/interface settings, not via prompt text.
+Controls the *maximum* reasoning depth via API/interface settings. Prompt text still has influence -- Google notes that phrasing like "Think very hard before answering" can increase reasoning within the level's ceiling.
 
 | Level | Latency | Cost | Use For |
 |-------|---------|------|---------|
+| `"minimal"` (Gemini 3.5 Flash only -- **not** supported on 3.1 Pro) | Fastest | Lowest | Trivial lookups, near-zero reasoning |
 | `"low"` | Fast | Lower | Simple queries, extraction, formatting, lookups |
-| `"high"` (default) | Slower | Higher | Research, planning, creative writing, complex problems |
+| `"medium"` (default on Gemini 3.5 Flash) | Moderate | Moderate | Balanced everyday tasks |
+| `"high"` | Slower | Higher | Research, planning, creative writing, complex problems |
 
-### 1.4 Keep Temperature at 1.0
+**Never send `thinking_budget` together with `thinking_level`** in the same request -- the API returns a 400 error. Pick one mechanism (prefer `thinking_level` on current models).
 
-**CRITICAL**: Gemini 3.x is calibrated for `temperature = 1.0`. Do NOT change.
+### 1.4 Omit Sampling Parameters
 
-- Lowering causes loops and degraded performance on reasoning tasks
-- Exception: For highly creative tasks, experiment with 1.1-1.2
-- Safety fallback: If safety filters trigger, try increasing temperature slightly
+**CRITICAL**: Current official Google guidance is to **OMIT** `temperature`, `top_p`, and `top_k` entirely and let the model use its defaults.
+
+- Setting sub-1.0 temperature **may** cause looping and degraded performance on reasoning tasks (Google's wording -- not a guaranteed failure)
+- Do not carry over sampling-param tuning from earlier Gemini generations
+- Steer style, tone, and variety through the prompt instead of sampling knobs
+- This mirrors an industry-wide shift: Claude current-gen returns 400 on **non-default** values of these params (defaults still accepted; `top_k` rejected outright), DeepSeek thinking mode ignores them
 
 ### 1.5 Use Consistent Structure
 
@@ -84,14 +90,15 @@ Explain how async/await works in JavaScript.
 
 ### Order Matters
 
-Place negative constraints, formatting constraints, and quantitative limits **at the END**.
+Place formatting constraints, negative constraints, and quantitative limits **at the END**. Place behavioral constraints (persona, role, tone, safety rules) **at the TOP**, before context and task -- they frame how the model interprets everything that follows.
 
-Gemini 3.x may drop constraints placed too early in the prompt.
+Gemini 3.x may drop non-behavioral constraints placed too early in the prompt.
 
 **Recommended hierarchy**:
-1. Context and source material
-2. Main task instructions
-3. Negative/formatting/quantitative constraints (LAST)
+1. Behavioral constraints (persona, tone, role, safety rules) -- TOP
+2. Context and source material
+3. Main task instructions
+4. Negative/formatting/quantitative constraints -- LAST
 
 **Bad** (constraints may be dropped):
 ```
@@ -171,18 +178,34 @@ Gemini 3.x defaults to **concise** responses.
 | More conversational | "Explain as a friendly, talkative assistant." |
 | Detailed explanation | "Provide a comprehensive, detailed response." |
 | Technical depth | "Include technical details and edge cases." |
-| Faster (with low thinking) | `thinking_level: "LOW"` + "Think silently." |
+| Faster (with low thinking) | `thinking_level: "low"` + "Think silently." |
 
-### Response Prefixes for Format Anchoring
+### Structured Output for Format Anchoring
 
-Begin the model's response to enforce structure:
+The Gemini API has **no `prefix` parameter**. To enforce output shape, use the
+structured-output config on `generate_content`:
 
 ```python
-response = model.generate(
-    prompt="Return user data as JSON...",
-    prefix='```json\n{"user": '  # Forces JSON format
+from google import genai
+from pydantic import BaseModel
+
+class User(BaseModel):
+    name: str
+    email: str
+
+client = genai.Client()
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents="Return user data as JSON: ...",
+    config={
+        "response_mime_type": "application/json",
+        "response_schema": User,
+    },
 )
 ```
+
+Where a schema is overkill, anchor the format in the prompt text instead
+("Respond with a single JSON object and no prose.").
 
 ---
 
@@ -321,7 +344,7 @@ Gemini Deep Research is an autonomous AI assistant that analyzes 40-250+ website
 
 ### Activation
 - Available in the Gemini web interface
-- Research plan presented for review before execution
+- Research plan review is **opt-in**: set `collaborative_planning=true`. Default is `false`, so execution normally starts without showing a plan
 - Tiered access: free (limited), AI Pro ($20/mo), Ultra (highest limits)
 
 ### Effective Prompt Patterns
@@ -342,7 +365,7 @@ Act as a market research analyst. Research:
 Deliverables: Executive summary, competitor comparison table, risk analysis.
 ```
 
-**Edit the plan**: The most impactful technique is reviewing and editing the proposed research plan before execution. Add, remove, or refocus steps using natural language.
+**Edit the plan**: The most impactful technique is reviewing and editing the proposed research plan before execution -- but you must opt in with `collaborative_planning=true` first. Once shown, add, remove, or refocus steps using natural language.
 
 ### Key Capabilities
 - Iterative research: 40-250+ sites per query
@@ -350,7 +373,7 @@ Deliverables: Executive summary, competitor comparison table, risk analysis.
 - File uploads: up to 10 files (PDFs, Docs, images)
 - Google Workspace integration (Drive, Docs)
 - Canvas transformation (infographics, audio summaries, interactive pages)
-- API access via Discovery Engine API in Vertex AI
+- API access via the **Gemini Interactions API** (the Deep Research Agent is exclusive to it -- not the Vertex AI Discovery Engine API)
 
 ### Limitations
 - No academic source filtering (unsuitable for scholarly work)
@@ -366,8 +389,11 @@ Deliverables: Executive summary, competitor comparison table, risk analysis.
 
 ```
 DO:
-- Set temperature = 1.0 (REQUIRED -- lower causes loops!)
-- Use thinking_level: "low" | "high"
+- OMIT temperature/top_p/top_k entirely (defaults; sub-1.0 causes looping)
+- Use thinking_level: "minimal" | "low" | "medium" (default on 3.5 Flash) | "high"
+- Never send thinking_budget + thinking_level together (400 error)
+- Return thought signatures in stateless multi-turn function calling
+- State the current year for time-sensitive queries (3.5 Flash cutoff Jan 2025)
 - Be direct and concise
 - Put context FIRST, questions LAST
 - Put CONSTRAINTS at END (critical -- dropped if early!)
@@ -376,16 +402,18 @@ DO:
 - Label multimodal inputs explicitly
 
 DON'T:
-- Lower temperature (causes loops/degradation)
+- Set temperature/top_p/top_k below defaults (causes loops/degradation) -- prefer omitting entirely
 - Put negative/formatting constraints BEFORE context
+- Put behavioral constraints (persona/tone/safety) at the END instead of the TOP
 - Use conversational language ("please", "kindly")
 - Use complex CoT from Gemini 2.x era
 - Use broad "do not infer" (be specific instead)
 
 CONSTRAINT ORDER (CRITICAL):
-1. Context/source material
-2. Main task
-3. Constraints LAST (or they're dropped!)
+1. Behavioral constraints (persona/tone/safety) -- TOP
+2. Context/source material
+3. Main task
+4. Negative/formatting constraints LAST (or they're dropped!)
 
 VERBOSITY: Default = concise
 - More verbose: "Explain as friendly, talkative assistant"
@@ -446,8 +474,25 @@ You are precise, analytical, and direct.
 
 ---
 
+## 12. Function Calling (Stateless Multi-Turn)
+
+### Thought Signatures
+
+When using function calling in a stateless multi-turn setup (you manage conversation history yourself, rather than a server-side Live session), Gemini 3.x returns **thought signatures** alongside function calls. These signatures must be sent back unmodified in the next turn's request history. Dropping or altering them breaks reasoning continuity and degrades multi-turn tool-use quality.
+
+### Strict Function-Response Matching
+
+Each function call must be matched by exactly **one** function response, matched by both `id` and `name`. Do not:
+- Omit a response for a call the model made
+- Send multiple responses for a single call
+- Mismatch the `id`/`name` pairing between call and response
+
+Violating this contract causes errors or malformed conversation state in subsequent turns.
+
+---
+
 ## References
 
-- [Vertex AI Gemini 3.1 Prompting Guide](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/gemini-3-prompting-guide)
+- [Vertex AI Gemini 3.x Prompting Guide](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/gemini-3-prompting-guide)
 - [Google AI Prompting Strategies](https://ai.google.dev/gemini-api/docs/prompting-strategies)
 - [Official Google Gemini 3 Prompting Guidelines](https://ai.google.dev/gemini-api/docs)

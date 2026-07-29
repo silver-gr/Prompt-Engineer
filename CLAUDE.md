@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **Prompt Engineering Knowledge Base v5.0** (March 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (Claude 4.6, GPT-5.x, Gemini 3.1, and 10+ other frontier models).
+This is a **Prompt Engineering Knowledge Base v6.0** (July 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (Claude Fable 5/Opus 5/Sonnet 5, GPT-5.5, Gemini 3.5, and 10+ other frontier models).
 
 ## Architecture
 
@@ -29,26 +29,33 @@ The repository follows a modular documentation structure (11 files, ~4,250 lines
 
 - **Context engineering > prompt engineering** - Focus on WHAT information you provide, not clever phrasing
 - **Simpler prompts work BETTER** - Reasoning models have native CoT; explicit step-by-step REDUCES performance
-- **Adaptive thinking** (Claude 4.6) - Model decides when/how much to reason automatically
-- **Agent coordination is table stakes** - Multi-agent orchestration standard across providers
-- **Context compaction** - Server-side summarization enables infinite conversations
+- **Effort parameter** is primary cost lever - low/medium on current models often exceed prior xhigh
+- **Adaptive thinking** defaults differ per model (Fable 5 always-on, Opus 5/Sonnet 5 on, Opus 4.8 off)
+- **Agent coordination is table stakes** - Orchestrator+executor is dominant pattern
+- **Compaction is a safety surface** - Silently evicts constraints; re-pin after every compaction
+- **Sampling params are dying** - temp/top_p/top_k → 400 on Claude current-gen
 
 ## Model-Specific Key Points
 
 | Model | Critical Setting | Key Technique |
 |-------|-----------------|---------------|
-| **Claude 4.6** | Adaptive thinking (auto) | XML structure, explain WHY not just WHAT |
-| **Gemini 3.1** | `temperature = 1.0` (REQUIRED) | Direct instructions, constraints LAST |
-| **GPT-5.x** | Reasoning profiles (light/balanced/deep) | Minimal prompts, crisp tool descriptions |
+| **Claude Fable 5** | Thinking always-on, effort | Brief instructions > enumeration, memory file, send-to-user tool |
+| **Claude Opus 5** | Thinking on (off ≤high), effort | Remove verification instructions, constrain scope, cap subagents |
+| **Claude Sonnet 5** | Thinking on, effort | Literal instruction following, state scope explicitly |
+| **Gemini 3.x** | OMIT temp/top_p/top_k | Direct instructions, constraints LAST |
+| **GPT-5.x** | Reasoning effort (none→xhigh) | Outcome-first minimal prompts, XML tags recommended |
 
 ## Anti-Patterns to Avoid
 
 - Explicit CoT ("Let's think step by step") with reasoning models
-- Excessive few-shot examples (>2, except Gemini: 2-3 OK)
+- "Think harder"/"keep going" - overthinking corrupts correct answers
+- Verification instructions for Opus 5/Fable 5 (self-verify; cost, no gain)
+- Telling Fable 5 to echo reasoning (triggers reasoning_extraction refusal)
+- Excessive few-shot examples (>5 = warning; >3 for Claude unless format demos)
 - Conversational padding ("please", "kindly") - especially harmful for Gemini
-- Over-prompting GPT-5 (less is more)
-- Lowering temperature on Gemini 3.x
-- Using "think" with Claude when extended thinking disabled
+- Over-prompting GPT-5/Fable 5 (less is more)
+- Setting temperature/top_p/top_k on Claude current-gen or Gemini (→ 400 or looping)
+- Offset-from-end references ("second-to-last") - Position Curse
 
 ## File Relationships
 
