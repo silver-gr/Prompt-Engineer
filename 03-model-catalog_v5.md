@@ -21,12 +21,14 @@ This is the **single source of truth** for all model specifications, capabilitie
 | xAI | Grok 4.5 | 500K | — | 2026 | Reasoning always-on, tiered pricing |
 | DeepSeek | V4 | 1M | 384K | 2026 | MIT, cost-effective frontier |
 | Zhipu | GLM-5.2 | 1M | 64K | 2026 | Top open-weight, MIT license |
-| Alibaba | Qwen 3.7 | 1M | 32K | 2026 | Flagship closed API, multilingual |
+| Alibaba | Qwen 3.7 | 1M | 32K | May 2026 | Flagship closed API, multilingual, text-only |
+| Alibaba | Qwen 3.8-Max-Preview | 1M | 64K | 2026 | Multimodal flagship (text/image/video), Token Plan only |
 | Moonshot | Kimi K3 | 1M | — | Jul 2026 | Open weights, always-on thinking, 2.8T MoE |
 | Moonshot | Kimi K2.6 | 2M | 64K | 2026 | Agent Swarm v2 (300 agents, 4K steps) |
 | MiniMax | M3 | 512K | 32K | 2026 | Budget frontier coding + multimodal |
 | Meta | Llama 4 Scout | 10M | 32K | Apr 2025 | Open-weight, largest context (frozen) |
 | Mistral | Large 3 | 256K | 32K | Feb 2026 | EU compliance, open weights |
+| Inception | Mercury 2 | 128K | — | Mar 2026 | Diffusion LLM, >1000 tok/s, lowest latency |
 
 ---
 
@@ -372,12 +374,31 @@ Earlier iterations. Grok 4 Fast introduced the unified reasoning/non-reasoning m
 
 ### Qwen 3.7 (Alibaba)
 
-- **Context Window**: 256K tokens
-- **Availability**: Flagship is now **closed/API-only**; open option is Qwen3.6-35B-A3B (Apache 2.0)
+**Released**: `qwen3.7-max` May 21, 2026 (snapshot `qwen3.7-max-2026-05-20`; US variant `qwen3.7-max-us` Jun 26, 2026) · `qwen3.7-plus` ~Jun 1, 2026 (snapshot `qwen3.7-plus-2026-05-26`)
+
+- **Context Window**: **1M tokens** for both `qwen3.7-max` and `qwen3.7-plus` (Alibaba Model Studio docs, EN and ZH)
+- **Availability**: Flagship is **closed/API-only**; open option is Qwen3.6-35B-A3B (Apache 2.0)
 - **Key Feature**: Broadest multilingual coverage
+- **Modality**: `qwen3.7-max` is **text-only** (no vision); `qwen3.7-plus` handles text and multimodal
 - **Reasoning**: `enable_thinking` toggle
 
+> **Do not read "256K" as this model's ceiling.** Alibaba's sizing-guidance prose says *"for standard tasks, 128k-256k tokens is typically sufficient"* — that is advice about how much context a task needs, not a spec. The max context is 1M.
+
 **Prompting**: Direct, clear instructions with structured context. Specify target language explicitly.
+
+### Qwen 3.8-Max-Preview (Alibaba)
+
+- **Context Window**: 1,000,000 tokens
+- **Max Output**: 65,536 tokens
+- **Modality**: text, image, video
+- **Availability**: Preview, gated to **Token Plan** subscribers on Alibaba Cloud Model Studio; likely model ID `qwen3.8-max-preview`
+- **Key Feature**: Flagship of the Qwen3.8 series — state of the art across *both* language and vision, unlike text-only `qwen3.7-max`
+- **Strengths**: Expert-level knowledge, complex logical reasoning, advanced mathematics, sophisticated coding; vision covers high-precision image understanding, visual reasoning, OCR, document and chart analysis, and fine-grained visual grounding
+- **Pricing**: not published
+
+> **Sourcing**: existence and Token Plan gating are confirmed in Alibaba's public docs, but the spec table above comes from the provider console, which sits behind a subscription login and could not be independently corroborated. Treat the numbers as vendor-stated, not third-party verified.
+
+**Prompting**: Same dialect as Qwen 3.7. Prefer it over `qwen3.7-max` when the task is multimodal; `qwen3.7-max` cannot see images at all.
 
 ### Kimi K3 (Moonshot AI)
 
@@ -446,7 +467,30 @@ Earlier iterations. Grok 4 Fast introduced the unified reasoning/non-reasoning m
 
 ---
 
-## 7. Model Selection Guide
+## 7. Specialized Architectures (Diffusion LLMs)
+
+Not autoregressive. Tokens are generated in parallel by diffusion rather than one at a time, which is where the order-of-magnitude speed difference comes from — it is an architecture change, not a smaller model.
+
+### Mercury 2 (Inception Labs)
+
+**Released**: ~March 2026
+
+- **Context Window**: 128K tokens (vendor states this is a current constraint they are working to extend)
+- **Max Output**: no published hard cap; docs use `max_tokens: 8192` in examples
+- **Pricing**: Input $0.25 · Cached input $0.025 · Output $0.75 per 1M
+- **Speed**: >1,000 tokens/sec on standard NVIDIA GPUs
+- **Modality**: text only
+- **API**: OpenAI-compatible, `https://api.inceptionlabs.ai/v1/chat/completions`; model ID `mercury-2`
+- **Reasoning**: `reasoning_effort` with tiers `instant` | `low` | `medium` | `high`
+- **Sibling**: Mercury Edit 2 (`mercury-edit-2`), coding-focused — FIM 32K / NextEdit 32K
+
+**Best for**: latency-bound work where time-to-first-token dominates quality margin — voice agents and phone calls, multi-step agentic tool loops, real-time search and RAG.
+
+**Prompting**: Standard markdown; no special dialect. Tune `reasoning_effort` first — vendor benchmarks put `medium` ahead of GPT-4.1 on IFBench and Tau3Bench Telecom while still decoding faster. Two architecture-specific gotchas: streaming semantics differ from autoregressive models because tokens do not arrive strictly left-to-right, so UI code that assumes sequential append may need reworking; and the 128K window is small for this generation, so it is the wrong pick for large-document work regardless of speed.
+
+---
+
+## 8. Model Selection Guide
 
 ### By Use Case
 
@@ -478,7 +522,7 @@ Earlier iterations. Grok 4 Fast introduced the unified reasoning/non-reasoning m
 
 ---
 
-## 8. Cost Optimization & Token Economics
+## 9. Cost Optimization & Token Economics
 
 ### Prompt Caching
 
@@ -518,7 +562,7 @@ Most providers offer prompt caching for repeated prefixes:
 
 ---
 
-## 9. Deprecated & Legacy Models
+## 10. Deprecated & Legacy Models
 
 ### Claude Legacy
 
@@ -545,7 +589,7 @@ Retired (except select clouds): Opus 4, Sonnet 4, Haiku 3.5.
 
 ---
 
-## 10. 2026 Paradigm Updates (July 2026)
+## 11. 2026 Paradigm Updates (July 2026)
 
 ### Adaptive Thinking Is Universal
 

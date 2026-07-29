@@ -82,6 +82,22 @@ Several 2026 models reprice the **entire request** once an input threshold is cr
 - arXiv:2605.12922 — multi-turn goal drift as attention-reachability failure
 - ICML 2026 (Zhejiang/Alibaba) — adversarial overthinking DoS
 
+## [5.1] - 2026-03-05
+
+### Claude Code Skill Package
+
+Packaged the knowledge base as an installable Claude Code skill using progressive disclosure — a single entry file routes by intent and loads only the references a given task needs. Documented retroactively; shipped the same day as 5.0.
+
+### Added
+- **`skills/prompt-context-engineer/SKILL.md`** — four operating modes (CRAFT / OPTIMIZE / REVIEW / ADAPT), technique decision tree, model-specific prompt templates, and a model selection guide
+- **Anti-pattern scanner (AP-1 – AP-10)** — severity-rated detection signals run against every prompt in all four modes
+- **16 progressive-disclosure reference files** — per-provider deep dives (Anthropic, OpenAI, Gemini, xAI, China labs), task patterns (code, analysis, content, data), cross-cutting patterns (agentic, safety, evaluation), the full template collection, and research-tool guides
+- **`scripts/build_context.py`** — context pack assembler with `--model` / `--task` shorthand
+- **`scripts/lint_refs.py`** — frontmatter and outdated-term validation across reference files
+
+### Note
+The packaged skill targets the 4.6-era model set (Claude 4.6, GPT-5.x, Gemini 3.1). The knowledge base modules moved on in 6.0; the skill has not yet been resynced.
+
 ## [5.0] - 2026-03-05
 
 ### Major Rewrite

@@ -524,7 +524,7 @@ START -> Is this a reasoning model (Claude 5 family / GPT-5.x / Gemini 3.x)?
 4. Use XML tags for Claude, Markdown for others
 5. Leverage native thinking modes
 6. Keep tool descriptions to 1-2 sentences
-7. Set temperature to 1.0 for Gemini
+7. Omit `temperature`/`top_p`/`top_k` for Gemini (AP-5)
 8. Give models space to reason
 9. Explain WHY, not just WHAT (especially Claude)
 10. Place constraints LAST for Gemini
@@ -533,7 +533,7 @@ START -> Is this a reasoning model (Claude 5 family / GPT-5.x / Gemini 3.x)?
 1. Use complex CoT with reasoning models (AP-2)
 2. Provide >2 few-shot examples (AP-3)
 3. Use conversational padding (AP-4)
-4. Lower Gemini temperature (AP-5)
+4. Set any sampling param on Gemini (AP-5)
 5. Say "think" with Claude thinking disabled (AP-6)
 6. Write verbose tool descriptions (AP-7)
 7. Prescribe exact tool sequences (AP-8)
