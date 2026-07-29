@@ -40,18 +40,18 @@ The repository follows a modular documentation structure (11 files, ~4,250 lines
 | Model | Critical Setting | Key Technique |
 |-------|-----------------|---------------|
 | **Claude Fable 5** | Thinking always-on, effort | Brief instructions > enumeration, memory file, send-to-user tool |
-| **Claude Opus 5** | Thinking on (off ≤high), effort | Remove verification instructions, constrain scope, cap subagents |
+| **Claude Opus 5** | Thinking on (off ≤high), effort | Remove *redundant* verification instructions, constrain scope, cap subagents |
 | **Claude Sonnet 5** | Thinking on, effort | Literal instruction following, state scope explicitly |
-| **Gemini 3.x** | OMIT temp/top_p/top_k | Direct instructions, constraints LAST |
-| **GPT-5.x** | Reasoning effort (none→xhigh) | Outcome-first minimal prompts, XML tags recommended |
+| **Gemini 3.x** | OMIT temp/top_p/top_k | Direct instructions, constraints in SYSTEM INSTRUCTION at top, question last |
+| **GPT-5.x** | `reasoning.effort` (enum is PER-MODEL) | Outcome-first minimal prompts, XML tags recommended |
 
 ## Anti-Patterns to Avoid
 
-- Explicit CoT ("Let's think step by step") with reasoning models
+- Explicit CoT ("Let's think step by step") with reasoning models **when thinking is enabled** (still valid as a fallback when thinking is off)
 - "Think harder"/"keep going" - overthinking corrupts correct answers
 - Verification instructions for Opus 5/Fable 5 (self-verify; cost, no gain)
 - Telling Fable 5 to echo reasoning (triggers reasoning_extraction refusal)
-- Excessive few-shot examples (>5 = warning; >3 for Claude unless format demos)
+- Excessive few-shot examples (>5 = warning; Anthropic recommends 3-5 diverse examples in `<example>` tags) or examples that demo reasoning rather than output format
 - Conversational padding ("please", "kindly") - especially harmful for Gemini
 - Over-prompting GPT-5/Fable 5 (less is more)
 - Setting temperature/top_p/top_k on Claude current-gen or Gemini (→ 400 or looping)

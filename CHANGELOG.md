@@ -2,6 +2,80 @@
 
 All notable changes to the Prompt Engineering Knowledge Base are documented in this file.
 
+## [6.0.1] - 2026-07-29 — Accuracy Audit
+
+Every file was fact-checked against official vendor documentation by an independent
+reviewer (Codex, `gpt-5.6-sol`, high reasoning effort), one file per pass. Findings
+were triaged into hard factual errors, rubric conflicts, and editorial guidance;
+each category is listed below.
+
+### Fabricated APIs Removed
+
+These did not exist in any vendor's documentation. Anyone copying them got a runtime error.
+
+- **`model.generate(prompt=..., prefix=...)`** (07-gemini) — no such method or parameter
+  in the Google GenAI SDK. Replaced with `client.models.generate_content()` using
+  `response_mime_type` + `response_schema`.
+- **`reasoning_profile: light|balanced|deep`** (08-gpt5, 03-catalog) — not an OpenAI
+  parameter. The prior edition compounded the error by advising migration *away* from it,
+  which legitimized it. Replaced with the real per-model `reasoning.effort` enum table.
+- **Gemini generation config with `temperature`/`top_p`** (04-evaluation) — replaced with
+  the nested `thinking.thinking_level` form and an explicit note to omit sampling params.
+
+### Factual Corrections
+
+- **Effort is soft guidance, not a hard cap** — `output_config.effort` steers behavior;
+  `max_tokens` remains the only strict ceiling (06-claude, 02-techniques).
+- **Effort mappings are Sonnet-specific** — the documented `medium` ≈ prior-`high`
+  equivalence applies to Sonnet 5, not the family. Sweep per model (00, 06).
+- **Sampling params: non-default values reject** — defaults are still accepted; only
+  non-default `temperature`/`top_p` return 400, and `top_k` is rejected outright.
+  Corrected from the blanket "MUST be 1.0" claim in 00/02/03/07/09/10.
+- **Gemini sampling is discouraged, not rejected** — accepted by the API; sub-1.0
+  temperature may cause looping. Downgraded from "→ 400" to "discouraged / may cause".
+- **Gemini `thinking` config is nested** — `{"thinking": {"thinking_level": "medium"}}`,
+  values lowercase; `minimal` is Gemini 3.5 Flash only (01, 07).
+- **`thinking.display` defaults to `"omitted"` on Fable 5** — must be set to
+  `"summarized"` to receive anything back (01, 09).
+- **Mid-conversation system messages are Opus-only** — Opus 5 and Opus 4.8 support them;
+  Sonnet 5 does not (06).
+- **Context awareness is model-scoped** — token-budget tracking is documented for
+  Sonnet 5, Sonnet 4.6, Sonnet 4.5, and Haiku 4.5 only (06).
+- **Chat Completions is not deprecated** — corrected in 08.
+- **GPT-5.6 Sol is the current flagship** — 08 still named GPT-5.5.
+- **Cache savings are ~90%**, not 50%/75%, for both OpenAI and Google at current
+  prices (01, 03).
+- **Haiku 4.5 is the standing exception** to every Claude 5 breaking change — keeps
+  prefill, `budget_tokens`, the old tokenizer, and sampling params. Noted inline
+  rather than only in the migration section (06).
+
+### Guidance Realigned to Vendor Docs
+
+- **Few-shot threshold raised from >2 to >5.** Anthropic recommends **3-5 diverse,
+  relevant examples** in `<example>` tags. The old rubric flagged vendor-recommended
+  practice as a lint error. AP-3 now targets *redundant* and *reasoning-trace* examples
+  rather than count in the 3-5 range (00, 01, 02, 03, 04, CLAUDE.md).
+- **CoT penalty scoped to thinking-enabled models.** Manual CoT is a documented fallback
+  when extended thinking is off (Opus 4.8 default, Haiku 4.5, legacy/open-weight models).
+  AP-2, the eval rubric, the lint stage, and the quality score are now gated on
+  `thinking_enabled` (00, 01, 02, 04, CLAUDE.md).
+- **Gemini constraint ordering flipped to match Google.** Essential constraints and
+  output-format requirements belong in the **system instruction at the beginning**;
+  only the specific question goes last, to avoid burial under long context. The prior
+  "constraints LAST" guidance contradicted Google's documentation (00, 02, 03, 07, 10,
+  CLAUDE.md).
+- **Tool-description length is provider-specific.** "1-2 sentences" is OpenAI's position.
+  Anthropic and Google both recommend detail, including when-to-use conditions. AP-7
+  now carries a per-provider table (10).
+- **Gemini Deep Research** — `collaborative_planning=true` is opt-in (default `false`),
+  and access is via the Gemini Interactions API, not Vertex Discovery Engine (07).
+
+### Notes on Scope
+
+Findings marked UNVERIFIABLE by the reviewer were largely artifacts of the per-pass
+web-fetch cap rather than unsupported claims, and were not treated as errors. Disputed
+items where vendor documentation was ambiguous were left unchanged.
+
 ## [6.0] - 2026-07-29
 
 ### Claude 5 Family Update

@@ -281,7 +281,7 @@ Less is more. Agentic persistence reminders are critical at minimal reasoning le
 - Favor DIRECTNESS over persuasion (treats prompts as executable instructions)
 - NO conversational fluff ("please", "kindly", "if you could")
 - Context FIRST, questions LAST for long contexts
-- Constraints at END (negative/formatting constraints dropped if placed early)
+- Constraints + output-format rules in the SYSTEM INSTRUCTION (top); specific question last
 - Use `thinking_level: "low"` for fast mode + "Think silently"
 - 2-3 few-shot examples with consistent formatting (Google recommendation)
 - Anchor transitions: "Based on the above..."
@@ -289,7 +289,7 @@ Less is more. Agentic persistence reminders are critical at minimal reasoning le
 
 **Watch For**:
 - Conversational language actively degrades instruction-following
-- Constraints placed before context may be dropped
+- Constraints stranded at the end of a long context compete with the data for attention
 - Personas taken very seriously -- may override other instructions
 
 ### Gemini 3.1 Flash-Lite
@@ -314,7 +314,7 @@ Still available for production workloads. Same 1M context, adaptive thinking bud
 
 Gemini 3.x treats prompts as executable instructions, not conversation. DO NOT use complex prompt engineering from the 2.x era. Use `thinking_level` for reasoning control. Keep temperature at 1.0. Be direct, never persuasive.
 
-**Critical constraint ordering**: Place negative/formatting constraints LAST or they get dropped.
+**Critical constraint ordering**: Put essential constraints and output-format requirements in the system instruction at the TOP. Reserve the last slot for the specific question.
 
 ---
 
@@ -545,7 +545,7 @@ Most providers offer prompt caching for repeated prefixes:
 
 1. **Right-size your model**: Use Haiku/Instant for simple tasks, Premium for complex ones
 2. **Leverage caching**: Structure prompts with stable prefixes first
-3. **Minimize few-shot**: 0-1 examples for reasoning models (saves tokens, improves quality)
+3. **Right-size few-shot**: 3-5 diverse examples is the vendor-recommended range; past ~5 you pay tokens for redundancy
 4. **Use structured outputs**: JSON mode reduces output tokens vs verbose prose
 5. **Batch processing**: Many providers offer 50% discounts for async batch API calls
 6. **Context window awareness**: Don't send 200K tokens when 10K suffices

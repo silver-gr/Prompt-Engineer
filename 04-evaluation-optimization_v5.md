@@ -38,7 +38,9 @@ class PromptDevelopmentLifecycle:
             self.current_prompt = enhance_context(self.current_prompt)
         elif needs_clearer_format(scores):
             self.current_prompt = clarify_output_format(self.current_prompt)
-        # DON'T add: CoT instructions, excessive examples, reasoning steps
+        # DON'T add (when thinking is ENABLED): CoT instructions, reasoning steps.
+        # Manual CoT remains a documented fallback when thinking is OFF.
+        # Examples: Anthropic recommends 3-5; treat >5 as the warning threshold.
         return self.current_prompt
 
     def iterate(self, max_iterations=5):
@@ -57,8 +59,11 @@ class PromptDevelopmentLifecycle:
 1. **Context quality** -- highest ROI
 2. **Output format clarity** -- high impact
 3. **Instruction clarity** -- medium impact
-4. **Examples** -- low impact, often reduce performance
-5. **CoT instructions** -- negative impact, remove
+4. **Examples** -- variable impact. Anthropic recommends **3-5 diverse, relevant examples**
+   in `<example>` tags, especially for format/edge-case demos. Measure before trimming;
+   only past ~5 does redundancy start to cost more than it buys.
+5. **CoT instructions** -- negative impact **when extended thinking is enabled** (duplicates
+   native reasoning). When thinking is OFF, manual CoT is a documented, supported fallback.
 
 ---
 
@@ -79,7 +84,7 @@ class PromptDevelopmentLifecycle:
 ### Implementation
 
 ```python
-def evaluate_prompt_performance(prompt, test_cases, model):
+def evaluate_prompt_performance(prompt, test_cases, model, thinking_enabled=True):
     results = {}
 
     for metric_name, metric_func in STANDARD_METRICS.items():
@@ -93,8 +98,9 @@ def evaluate_prompt_performance(prompt, test_cases, model):
     # Simplicity bonus: penalize over-engineering
     results['simplicity'] = {
         'token_count': count_tokens(prompt),
-        'has_unnecessary_cot': detect_cot_instructions(prompt),
-        'has_excessive_examples': count_examples(prompt) > 2
+        # Redundant only when the target model reasons natively
+        'has_unnecessary_cot': detect_cot_instructions(prompt) and thinking_enabled,
+        'has_excessive_examples': count_examples(prompt) > 5   # 3-5 is vendor-recommended
     }
 
     # Apply penalties for anti-patterns
@@ -217,13 +223,16 @@ def incremental_optimization(base_prompt, test_cases, metrics):
 **Definition**: Removing unnecessary elements while maintaining performance.
 
 ```python
-def distill_prompt(complex_prompt, model, test_cases):
+def distill_prompt(complex_prompt, model, test_cases, thinking_enabled=True):
     baseline_score = evaluate(complex_prompt, test_cases)
 
     # Remove elements in order of likely harm
     removals = [
-        ('cot_instructions', remove_cot),
-        ('excess_examples', remove_examples_beyond_one),
+        # Only redundant when the model reasons natively. With thinking OFF,
+        # manual CoT is a supported fallback -- keep it.
+        *([('cot_instructions', remove_cot)] if thinking_enabled else []),
+        # Anthropic recommends 3-5 examples; trim only the surplus past 5.
+        ('surplus_examples', remove_examples_beyond_five),
         ('fluff', remove_conversational_padding),
         ('verbose_instructions', simplify_task_description),
     ]
@@ -248,14 +257,16 @@ def distill_prompt(complex_prompt, model, test_cases):
 
 ```python
 class ContextQualityAnalyzer:
-    def analyze(self, prompt):
+    def analyze(self, prompt, thinking_enabled=True):
         analysis = {
             'context_richness': measure_context_richness(prompt),
             'structure_clarity': measure_structure(prompt),
             'relevance_score': measure_relevance(prompt),
             # Anti-pattern detection
-            'has_cot_instructions': detect_cot(prompt),
-            'excessive_examples': count_examples(prompt) > 2,
+            # CoT only counts as an anti-pattern when thinking is on
+            'redundant_cot': detect_cot(prompt) and thinking_enabled,
+            # Anthropic's guidance is 3-5 examples; flag only past 5
+            'excessive_examples': count_examples(prompt) > 5,
             'conversational_fluff': detect_fluff(prompt),
             'complexity_score': measure_complexity(prompt)
         }
@@ -263,10 +274,10 @@ class ContextQualityAnalyzer:
         recommendations = []
         if analysis['context_richness'] < 0.5:
             recommendations.append("Enrich context with relevant background")
-        if analysis['has_cot_instructions']:
-            recommendations.append("Remove CoT instructions -- use thinking modes")
+        if analysis['redundant_cot']:
+            recommendations.append("Remove CoT instructions -- thinking is on, so they duplicate native reasoning")
         if analysis['excessive_examples']:
-            recommendations.append("Reduce to 0-1 examples")
+            recommendations.append("Trim to 3-5 diverse, relevant examples")
         if analysis['conversational_fluff']:
             recommendations.append("Remove conversational padding")
 
@@ -410,10 +421,12 @@ class PromptPipeline:
 
     def lint_stage(self, prompt, _):
         issues = []
-        if detect_cot_instructions(prompt):
-            issues.append('Contains unnecessary CoT instructions')
-        if count_examples(prompt) > 2:
-            issues.append('Excessive examples (>2)')
+        # Scope the CoT check to thinking-enabled targets -- with thinking off,
+        # manual CoT is a supported fallback, not a defect.
+        if self.config.get('thinking_enabled', True) and detect_cot_instructions(prompt):
+            issues.append('Contains CoT instructions redundant with native thinking')
+        if count_examples(prompt) > 5:
+            issues.append('Excessive examples (>5; Anthropic recommends 3-5)')
         if detect_fluff(prompt):
             issues.append('Contains conversational fluff')
         if count_tokens(prompt) > self.config['max_tokens']:
@@ -618,7 +631,7 @@ def optimize_for_gemini(prompt):
 ## 12. Prompt Quality Score
 
 ```python
-def calculate_prompt_quality(prompt, performance_results):
+def calculate_prompt_quality(prompt, performance_results, thinking_enabled=True):
     # Performance component (60%)
     performance = performance_results['aggregate'] * 0.6
 
@@ -628,8 +641,9 @@ def calculate_prompt_quality(prompt, performance_results):
 
     # Anti-pattern penalties
     penalties = 0
-    if detect_cot_instructions(prompt): penalties += 0.1
-    if count_examples(prompt) > 2: penalties += 0.05
+    # CoT is only redundant against native reasoning -- no penalty when thinking is off
+    if thinking_enabled and detect_cot_instructions(prompt): penalties += 0.1
+    if count_examples(prompt) > 5: penalties += 0.05
     if detect_fluff(prompt): penalties += 0.05
 
     total = performance + simplicity - penalties

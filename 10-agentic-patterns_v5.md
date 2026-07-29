@@ -487,7 +487,7 @@ Per-model delegation behavior:
 ### Gemini 3.x
 - **Strengths**: Massive context (1M), direct instruction execution
 - **Watch**: OMIT sampling params; return thought signatures in stateless multi-turn function calling
-- **Key**: Context first, questions last; behavioral constraints TOP, formatting END
+- **Key**: All constraints (behavioral AND formatting) in the system instruction at the TOP; context first, specific question last
 
 ### Kimi K2.6
 - **Strengths**: Agent Swarm v2 (300 sub-agents, 4,000 steps, ~13-hour runs), 2M context

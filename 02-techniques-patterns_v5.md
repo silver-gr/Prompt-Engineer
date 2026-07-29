@@ -120,7 +120,7 @@ You are a [expert_type] specializing in [domain].
 | Output Format | Schema/structure | 5-10% |
 | Constraints | Boundaries, limits | 5-10% |
 
-**Gemini-critical**: Place constraints LAST. Gemini 3.x drops negative/formatting constraints placed before context.
+**Gemini-critical**: Place essential constraints and output-format requirements **in the system instruction, at the TOP**. Only the specific question goes last, and only to keep it from being buried under a long context. (Corrected July 2026 -- earlier editions of this guide said "constraints LAST", which contradicts Google's prompting-strategies documentation.)
 
 ---
 
@@ -312,7 +312,7 @@ Detection:
 - Prompt >500 tokens for simple tasks
 - Multiple pages of instructions
 - Elaborate CoT frameworks
-- Excessive few-shot (>2 examples)
+- Excessive few-shot (>5 examples; 3-5 is vendor-recommended)
 
 **Bad**:
 ```
@@ -340,7 +340,12 @@ Return JSON: {"patterns": [], "insights": [], "confidence": 0.0-1.0}
 
 ### AP-2: Explicit CoT with Reasoning Models
 
-Detection:
+**Scope: models with extended thinking ENABLED.** When thinking is off (Opus 4.8
+default, Haiku 4.5, legacy/open-weight models), manual CoT is a supported technique
+that vendors still document -- not an anti-pattern. See "When Explicit CoT Still
+Works" in 01-foundations.
+
+Detection (thinking-enabled targets only):
 - Contains "Let's think step by step"
 - Contains "Step 1:", "Step 2:", etc.
 - Prescriptive reasoning instructions
@@ -351,9 +356,15 @@ Detection:
 
 ### AP-3: Excessive Few-Shot
 
+> **Corrected July 2026.** Earlier editions of this KB set the warning line at
+> >2 examples. Anthropic's own best-practices guidance recommends **3-5 diverse,
+> relevant examples** in `<example>` tags. The anti-pattern is *redundant* examples
+> and *reasoning-trace* examples -- not example count in the 3-5 range.
+
 Detection:
-- More than 2 examples for reasoning models
-- Examples showing reasoning steps
+- More than 5 examples (past that, added examples are usually redundant)
+- Examples showing reasoning steps (the model reasons natively -- demo the FORMAT, not the thinking)
+- Near-identical examples that cover the same case
 - Examples consuming >30% of prompt tokens
 
 **Bad**:
@@ -367,7 +378,8 @@ Detection:
 }
 ```
 
-**Good**: 0-1 examples showing format only, no reasoning steps.
+**Good**: 3-5 diverse examples showing the output FORMAT only -- no reasoning steps.
+Fewer is fine when the format is obvious; the ceiling matters more than the floor.
 
 ### AP-4: Conversational Fluff
 
@@ -527,11 +539,11 @@ START -> Is this a reasoning model (Claude 5 family / GPT-5.x / Gemini 3.x)?
 7. Omit `temperature`/`top_p`/`top_k` for Gemini (AP-5)
 8. Give models space to reason
 9. Explain WHY, not just WHAT (especially Claude)
-10. Place constraints LAST for Gemini
+10. Place constraints in the system instruction (TOP) for Gemini; question last
 
 **DON'T**:
-1. Use complex CoT with reasoning models (AP-2)
-2. Provide >2 few-shot examples (AP-3)
+1. Use complex CoT with reasoning models **when thinking is enabled** (AP-2)
+2. Provide >5 few-shot examples, or examples that show reasoning steps (AP-3)
 3. Use conversational padding (AP-4)
 4. Set any sampling param on Gemini (AP-5)
 5. Say "think" with Claude thinking disabled (AP-6)

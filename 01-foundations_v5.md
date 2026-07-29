@@ -33,7 +33,7 @@ AVOID (negative impact):
 - Micromanaging reasoning steps
 - Conversational padding ("please", "kindly")
 - Over-specified step-by-step frameworks
-- Excessive few-shot examples (>2)
+- Excessive few-shot examples (>5; 3-5 is the vendor-recommended range)
 - Prescriptive "think about X, then Y, then Z"
 ```
 
@@ -211,10 +211,13 @@ Best practice: Let model decide. Raise effort for depth, not "think harder".
 
 ### When Explicit CoT Still Works
 
+- **Whenever extended thinking is OFF** -- Opus 4.8 (thinking off by default),
+  Haiku 4.5, and any legacy/open-weight model. Manual CoT is the documented
+  fallback here, not an anti-pattern.
 - For **output transparency** (showing work, not guiding reasoning)
 - For **debugging/verification** (user needs to see the logic)
-- For **legacy models** without native reasoning
-- **NOT** for telling reasoning models how to think
+- **NOT** for telling a thinking-enabled model how to think -- there it duplicates
+  native reasoning and costs tokens for no gain
 
 ---
 
@@ -401,7 +404,7 @@ Place stable content first, dynamic content last:
 |-----------|--------|-----|
 | Elaborate CoT | Deprecated | Models reason internally |
 | Many-shot (3-5+ examples) | Deprecated | Can overwhelm native reasoning |
-| "Let's think step by step" | Obsolete | Use thinking modes instead |
+| "Let's think step by step" | Obsolete *when thinking is on* | Use thinking modes; still valid with thinking off |
 | Complex prompt frameworks | Harmful | Simpler prompts work better |
 | Conversational padding | Harmful | Especially bad for Gemini 3.x |
 | Lowering Gemini temperature | Discouraged | May cause loops/degradation |

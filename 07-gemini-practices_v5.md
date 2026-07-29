@@ -90,35 +90,45 @@ Explain how async/await works in JavaScript.
 
 ### Order Matters
 
-Place formatting constraints, negative constraints, and quantitative limits **at the END**. Place behavioral constraints (persona, role, tone, safety rules) **at the TOP**, before context and task -- they frame how the model interprets everything that follows.
+> **Corrected July 2026.** Earlier editions of this guide told you to put
+> formatting and negative constraints **last**. Google's prompting-strategies
+> documentation says the opposite: **essential constraints and output-format
+> requirements belong in the system instruction, at the beginning.** Only the
+> *specific question* goes last, and only when it follows a long context.
 
-Gemini 3.x may drop non-behavioral constraints placed too early in the prompt.
+Put every constraint that governs behavior or output shape **at the TOP**, in
+the system instruction where possible. The "last" slot is reserved for the
+specific ask, and exists to solve a different problem: in long-context prompts,
+a question buried above 100K tokens of source material gets lost.
 
 **Recommended hierarchy**:
-1. Behavioral constraints (persona, tone, role, safety rules) -- TOP
+1. System instruction: persona, tone, safety rules, **and output-format requirements** -- TOP
 2. Context and source material
 3. Main task instructions
-4. Negative/formatting/quantitative constraints -- LAST
+4. The specific question -- LAST (this is the long-context rule, not a constraint rule)
 
-**Bad** (constraints may be dropped):
-```
-Do not include prices over $100.
-Maximum 5 items.
-Format as bullet points.
-
-Find laptop recommendations from the catalog below:
-[catalog data]
-```
-
-**Good** (constraints preserved):
+**Bad** (constraints stranded after a long context, competing with the data for attention):
 ```
 Find laptop recommendations from the catalog below:
-[catalog data]
+[50K tokens of catalog data]
 
 Requirements:
 - Do not include prices over $100
 - Maximum 5 items
 - Format as bullet points
+```
+
+**Good** (constraints in the system instruction, question last):
+```
+system_instruction:
+  You recommend laptops from a supplied catalog.
+  Never include items priced over $100.
+  Return at most 5 items, formatted as bullet points.
+
+user:
+  [50K tokens of catalog data]
+
+  Which laptops should I consider?
 ```
 
 ---
@@ -127,7 +137,7 @@ Requirements:
 
 ### Context First, Questions Last
 
-For long contexts, provide all documents/data/code first. Place instructions at the end.
+For long contexts, provide all documents/data/code first, then the specific question at the end. This is about keeping the *ask* from being buried -- standing constraints still belong in the system instruction at the top.
 
 ```xml
 <context>
@@ -403,17 +413,17 @@ DO:
 
 DON'T:
 - Set temperature/top_p/top_k below defaults (causes loops/degradation) -- prefer omitting entirely
-- Put negative/formatting constraints BEFORE context
-- Put behavioral constraints (persona/tone/safety) at the END instead of the TOP
+- Put constraints (behavioral OR formatting) at the END instead of the system instruction
+- Bury the specific question above a long context
 - Use conversational language ("please", "kindly")
 - Use complex CoT from Gemini 2.x era
 - Use broad "do not infer" (be specific instead)
 
 CONSTRAINT ORDER (CRITICAL):
-1. Behavioral constraints (persona/tone/safety) -- TOP
+1. System instruction: persona/tone/safety AND output-format rules -- TOP
 2. Context/source material
 3. Main task
-4. Negative/formatting constraints LAST (or they're dropped!)
+4. The specific question LAST (long-context rule -- keeps the ask from being buried)
 
 VERBOSITY: Default = concise
 - More verbose: "Explain as friendly, talkative assistant"
