@@ -7,6 +7,8 @@
 # OMC state (session-scoped)
 .omc/
 
+.omx/
+
 # TLDR cache
 .tldr/
 
@@ -14,3 +16,7 @@
 .venv*/
 __pycache__/
 *.pyc
+
+# local reference legacy versions
+archive/
+reference/
