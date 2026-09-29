@@ -12,7 +12,7 @@ The parent SKILL.md carries the scan table (ID, name, signal, applies-to, severi
 **Bad** `Let's think step by step. Step 1: analyze component A. Step 2: examine component B. Step 3: weigh the evidence.`
 **Good** `Analyze the relationship between A and B. Explain the implications.`
 **Why** Reasoning models plan natively. A prescribed ladder replaces that plan with a shorter, fixed, worse one — and you pay tokens for the downgrade.
-**Not a hit** Anthropic's closing "Think the problem through before you answer." for Sonnet 5.5 JSON reasoning with adaptive thinking is official guidance. **Gemini caveat (still a hit):** Google's own template ends with a step-by-step line. Flag a live instruction as usual and note that deleting it is low-risk.
+**Not a hit** Anthropic's closing think-through line for Sonnet 5.5 JSON reasoning with adaptive thinking (wording in `tasks-data.md`) is official guidance. **Gemini caveat (still a hit):** Google's own template ends with a step-by-step line. Flag a live instruction as usual and note that deleting it is low-risk.
 
 ### AP-5 · Sampling misconfiguration · C
 **Bad** `{"temperature": 0.2, "top_p": 0.9, "top_k": 40}` sent to Gemini 3.x or Kimi K3/K2.7/K2.6, or non-default `temperature` sent to a current Claude model. Gemini 3.8 variants: `candidate_count`, `frequency_penalty`, `presence_penalty`.

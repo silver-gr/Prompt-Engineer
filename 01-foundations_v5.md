@@ -8,7 +8,7 @@ This module covers the foundational principles of modern prompt engineering: con
 
 ## 1. The 2026 Paradigm: Context Engineering
 
-**Core Principle**: The quality of WHAT information you provide matters far more than HOW you phrase requests. With reasoning models (Claude 4.6, GPT-5.x, Gemini 3.1), focus on context structure, not clever prompting tricks.
+**Core Principle**: The quality of WHAT information you provide matters far more than HOW you phrase requests. With reasoning models (Claude 5.x, GPT-5.x/GPT-6, Gemini 3.x), focus on context structure, not clever prompting tricks.
 
 ### What Changed
 
@@ -33,7 +33,7 @@ AVOID (negative impact):
 - Micromanaging reasoning steps
 - Conversational padding ("please", "kindly")
 - Over-specified step-by-step frameworks
-- Excessive few-shot examples (>5; 3-5 is the vendor-recommended range)
+- Excessive few-shot examples (AP-3: >2 format-only on GPT and other reasoning models; Claude 3-5 recommended; Gemini "a few")
 - Prescriptive "think about X, then Y, then Z"
 ```
 
@@ -45,7 +45,7 @@ AVOID (negative impact):
 | Relevant background | High | 20-30% | Well-organized |
 | Input data | High | 40-50% | Properly formatted |
 | Output format | High | 5-10% | Explicit schema |
-| Examples | Low | 0-10% | 0-1 for format only |
+| Examples | Low | 0-10% | Format only; Claude 3-5, Gemini a few, others 0-2 |
 | Reasoning guidance | **Avoid** | **0%** | Let model decide |
 
 ---
@@ -79,7 +79,7 @@ Every effective prompt contains some combination of:
 | Model Family | Preferred Format | Key Pattern |
 |--------------|-----------------|-------------|
 | Claude 5 family | XML tags | `<context>`, `<task>`, `<output_format>` |
-| GPT-5.x | Markdown or XML | XML tags now recommended |
+| GPT-5.x / GPT-6 | Markdown or XML | XML tags now recommended |
 | Gemini 3.x | XML or Markdown | Either works; be consistent within prompt |
 
 ### Delimiter Implementation
@@ -175,16 +175,31 @@ Instead of prompt-based Chain-of-Thought, use each model's native reasoning capa
 **Claude 5 Family (Anthropic)** -- Adaptive Thinking + Effort:
 ```
 Thinking defaults (per model):
-- Fable 5: always-on (can't disable); raw CoT never returned. `thinking.display` defaults to `"omitted"` -- set `"summarized"` to get readable summaries back
-- Opus 5: on by default; can disable only at effort ≤high
-- Opus 4.8: off unless type:"adaptive" set
-- Sonnet 5: on by default; type:"disabled" to turn off
-- Haiku 4.5: manual budget (budget_tokens:N)
+- Fable 5.1 / Fable 5: always-on; type:"disabled" -> 400. Raw CoT never returned
+- Opus 5.5: always-on; type:"disabled" -> 400 at every effort
+- Sonnet 5.5: on; type:"disabled" -> 400. Lowest setting is
+  type:"between_tools" (effort <=high only; accepts no display,
+  budget_tokens or block_binding; no thinking on tool-less turns)
+- Opus 5 (legacy): on; disabled only at effort <=high
+- Sonnet 5 (legacy): on; type:"disabled" turns it off
+- Opus 4.8 (legacy): off unless type:"adaptive" set
+- Haiku 4.5: manual budget (budget_tokens:N); off by default
+
+thinking.display: "omitted" (default on 5.x) | "summarized" | "updates" (beta).
+On Fable 5.1 / Opus 5.5 / Sonnet 5.5, between-tool progress text arrives as
+thinking blocks, empty under "omitted" -- set "updates" or "summarized" if
+users need to see it.
 
 Effort parameter (output_config.effort):
-- low/medium/high (default)/xhigh/max
-- Primary cost lever; low/medium often exceed prior models' xhigh
-- Controls thinking depth, NOT response length
+- low/medium/high/xhigh/max. Default differs per model (Opus 5.5: medium;
+  Fable 5.1, Sonnet 5.5: high); setting the default equals omitting it
+- Primary cost lever; controls thinking depth, NOT response length
+- Does not transfer across models: only documented pairs hold
+  (e.g. Opus 5.5 medium >= Opus 5 high). Re-sweep per model.
+
+History: thinking blocks are bound to the conversation prefix on Fable 5.1 /
+Opus 5.5 / Sonnet 5.5. Keep history append-only and pass thinking blocks back
+unchanged; editing system, tools, or earlier turns -> 400 on newer accounts.
 
 Best practice: Let model decide. Raise effort for depth, not "think harder".
 ```
@@ -193,26 +208,32 @@ Best practice: Let model decide. Raise effort for depth, not "think harder".
 ```json
 {
   "thinking": {"thinking_level": "medium"}  // nested, not top-level
-                               // minimal (3.5 Flash only)/low/medium (default)/high
-  // OMIT temperature/top_p/top_k entirely (still accepted, but discouraged;
-  // sub-1.0 temperature MAY cause looping/degradation on reasoning tasks)
+  // low/medium/high; default differs per model (3.8/3.7 Flash: medium,
+  // no `minimal`; 3.6 Flash: medium; 3.1 Pro: high). `minimal` exists on
+  // 3.6 Flash, 3.5 Flash, Flash-Lite, 3 Flash -- and is an error on 3.7+
+  // thinking_budget + thinking_level in one request -> 400
+  // OMIT temperature/top_p/top_k entirely (deprecated Jul 2026: ignored on
+  // 3.6+, sub-1.0 values can loop on older 3.x, 400 on future generations)
 }
 ```
 
-**GPT-5.x (OpenAI)** -- Reasoning Effort:
+**GPT-5.x / GPT-6 (OpenAI)** -- Reasoning Effort:
 ```json
 {
   "reasoning": {"effort": "medium"}  // Responses API. Enum is PER-MODEL:
-                                     // GPT-5 base: minimal/low/medium/high
-                                     // 5.2/5.5: none/low/medium/high/xhigh
-                                     // 5.6: adds max
+                                     // GPT-5.5: none/low/medium/high/xhigh
+                                     // GPT-5.6, GPT-6 Sol/Luna: none..max
+                                     // GPT-6 Astra: low..max; "none" -> 400
+                                     // Older GPT-5 base: minimal/low/medium/high
+  // "mode": "standard"|"pro" is a separate reasoning field (5.6+, Responses only)
 }
 ```
+GPT-6 also adds `configuration_update`, an input item that changes effort mid-conversation without breaking the cache prefix (see 08).
 
 ### When Explicit CoT Still Works
 
 - **Whenever extended thinking is OFF** -- Opus 4.8 (thinking off by default),
-  Haiku 4.5, and any legacy/open-weight model. Manual CoT is the documented
+  Haiku 4.5, Sonnet 5 with `type:"disabled"`, and any legacy/open-weight model. Manual CoT is the documented
   fallback here, not an anti-pattern.
 - For **output transparency** (showing work, not guiding reasoning)
 - For **debugging/verification** (user needs to see the logic)
@@ -223,7 +244,7 @@ Best practice: Let model decide. Raise effort for depth, not "think harder".
 
 ## 5. Large Context Management
 
-### Principles for 1M-2M Token Windows
+### Principles for 1M-class Token Windows (10M on Llama 4 Scout)
 
 - **Structure over append**: Use clear markdown headers and sections, not raw text dumps
 - **Strategic placement**: Critical information at beginning or end of context (high-recall zones)
@@ -306,16 +327,17 @@ Most frontier models support native JSON output:
 ```python
 # OpenAI
 response = client.chat.completions.create(
-    model="gpt-5.2",
+    model="gpt-5.6-sol",
     response_format={"type": "json_object"},
     messages=[{"role": "user", "content": "Extract entities as JSON..."}]
 )
 
 # Anthropic
 response = client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-opus-5-5",
     messages=[...],
-    # Use XML output tags or explicit JSON instruction
+    # Structured outputs (output_config.format), or XML output tags / explicit
+    # JSON instruction. No assistant prefill on 5.x (400).
 )
 
 # Google
@@ -323,6 +345,8 @@ response = model.generate_content(
     "Extract entities...",
     generation_config={"response_mime_type": "application/json"}
 )
+# generateContent only. On the Interactions API (GA, recommended) use
+# response_format={"type": "text", "mime_type": "application/json", "schema": {...}}
 ```
 
 ### Schema Specification
@@ -349,8 +373,9 @@ Return JSON matching this schema exactly:
 - Specify exact schema with types
 - Use native JSON mode when available
 - Validate output programmatically
-- For Claude: XML tags guide structure effectively
-- For Gemini: Use response prefixes to anchor format (e.g., start with `{"`)
+- For Claude 5.x: prefill is a 400 and forced `tool_choice` (`any`/`tool`) is a 400 on Fable 5.1, Opus 5.5, Sonnet 5.5. Use structured outputs, or `tool_choice: auto` + `strict: true` tools; XML tags guide structure otherwise (Haiku 4.5 still accepts prefill)
+- For Gemini: no prefill (a trailing model turn is a 400 on 3.6+); anchor format with `system_instruction` or a response schema
+- Treat `stop_reason: "max_tokens"` as a failure even when the JSON parses
 
 ---
 
@@ -372,13 +397,19 @@ Place stable content first, dynamic content last:
 | Provider | Mechanism | Max Savings |
 |----------|-----------|-------------|
 | Anthropic | Explicit `cache_control` breakpoints | ~90% on cached tokens |
-| OpenAI | Automatic prefix caching | ~90% on cached tokens |
+| OpenAI | Automatic prefix caching; explicit `prompt_cache_options` (ttl, breakpoints) on GPT-5.6+ | ~90% on cached tokens |
 | Google | Explicit cache creation via API | ~90% on cached tokens (excl. storage) |
+
+Cache rules that bite:
+- Minimum cacheable prompt is per model (Fable 5.1 / Opus 5.5 / Sonnet 5.5: 512 tokens; Sonnet 5 and Opus 4.8: 1,024; Haiku 4.5: 4,096) -- shorter prefixes silently don't cache
+- Any edit to the stable prefix invalidates everything after it, including thinking blocks bound to it on current Claude
+- Top-level effort changes break the cache on Claude 5.x: pick effort before the session, or use per-message effort (beta)
+- Keep tool lists in a deterministic order; append-only history
 
 ### Token Efficiency Principles
 
 1. **Zero-shot first**: Start without examples (saves tokens, often better quality)
-2. **Minimal examples**: Max 1-2, format demonstration only
+2. **Minimal examples**: 1-2 for format on GPT and other reasoning models; Claude (3-5 diverse `<example>` tags) and Gemini (always a few, identically formatted) are the documented exceptions
 3. **Structured output**: JSON is more token-efficient than verbose prose
 4. **Remove fluff**: Every token of "please", "kindly" is waste
 5. **Right-size models**: Use economy tier for simple tasks
@@ -403,12 +434,15 @@ Place stable content first, dynamic content last:
 | Technique | Status | Why |
 |-----------|--------|-----|
 | Elaborate CoT | Deprecated | Models reason internally |
-| Many-shot (3-5+ examples) | Deprecated | Can overwhelm native reasoning |
+| Many-shot (>5 examples) | Deprecated | Can overwhelm native reasoning; 3-5 is the Claude range, and Gemini wants a few |
 | "Let's think step by step" | Obsolete *when thinking is on* | Use thinking modes; still valid with thinking off |
 | Complex prompt frameworks | Harmful | Simpler prompts work better |
 | Conversational padding | Harmful | Especially bad for Gemini 3.x |
-| Lowering Gemini temperature | Discouraged | May cause loops/degradation |
+| Setting Gemini sampling params | Omit entirely (deprecated; ignored on 3.6+) | May cause loops/degradation |
 | "Think" word (Claude, thinking off) | Harmful | Use "consider", "evaluate" |
+| Sampling params on Claude 5.x / Gemini 3.6+ | Error or ignored | 400 on Claude 5.x; ignored on Gemini 3.6+. Omit |
+| Assistant prefill, `budget_tokens` (Claude 5.x) | Removed | 400. Structured outputs / adaptive thinking (Haiku 4.5 exempt) |
+| Carrying an effort level across models | Harmful | Enums and calibration are per model; re-sweep |
 
 ---
 
@@ -417,7 +451,7 @@ Place stable content first, dynamic content last:
 1. **Clarity over cleverness**: Direct instructions outperform tricks
 2. **Context quality > prompt phrasing**: Focus on WHAT you provide
 3. **Simplicity wins**: Reasoning models work best with clear, minimal prompts
-4. **Native features first**: Use thinking modes, JSON mode, caching
+4. **Native features first**: Use thinking modes, structured outputs, caching; configure effort/thinking in the API call, not in prose
 5. **Explain motivation**: WHY behind instructions helps models generalize
 6. **Be direct**: Treat prompts as executable instructions
 7. **Structure context**: Hierarchical organization, clear labels
@@ -431,4 +465,4 @@ This module is auto-loaded. For model-specific details, see:
 - 03-model-catalog_v5.md (all model specs)
 - 06-claude-practices_v5.md (Claude-specific)
 - 07-gemini-practices_v5.md (Gemini-specific)
-- 08-gpt5-practices_v5.md (GPT-5-specific)
+- 08-gpt5-practices_v5.md (GPT-5 and GPT-6-specific)

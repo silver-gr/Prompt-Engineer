@@ -1,10 +1,12 @@
-# Gemini Practices (Google, July 2026)
+# Gemini Practices (Google, September 2026)
 
 This module merges Gemini Deep Research and Gemini 3.x prompting guidance into a single reference for all Google Gemini models.
 
 > **Model specs**: See 03-model-catalog_v5.md for Gemini family data.
 > **Anti-patterns**: See 02-techniques-patterns_v5.md (canonical).
-> **Current models covered**: Gemini 3.5 Flash (`thinking_level` default = `medium`; knowledge cutoff January 2025 -- explicitly state the current year/date for time-sensitive queries) and Gemini 3.1 Pro Preview (`gemini-3.1-pro-preview`). Guidance below applies to both unless noted.
+> **Current models covered**: Gemini 3.8 Flash (`gemini-3.8-flash`, GA Sep 2 2026, top text model; `thinking_level` default = `medium`), 3.7 Flash, 3.6 Flash, 3.5 Flash, 3.5 Flash-Lite, 3.1 Flash-Lite, 3.1 Pro Preview (`gemini-3.1-pro-preview`, still Preview) and 3 Flash Preview. Knowledge cutoff is January 2025 for 3.5 Flash and 3 Flash (not published for 3.6-3.8) -- explicitly state the current year/date for time-sensitive queries. Guidance below applies to all unless noted.
+> **Status**: Gemini 3.5 Pro is unreleased ("coming soon"); Gemini 4 is in training with no release date. Neither is a usable model.
+> **Google's default for new projects**: 3.5 Flash-Lite or 3.8 Flash. The Interactions API (GA June 2026) is Google's recommended surface; `generateContent` is legacy but fully supported.
 
 ---
 
@@ -26,26 +28,35 @@ Gemini 3.x has native advanced reasoning. Stop using complex CoT from the 2.x er
 
 **Exception**: For very complex reasoning, you can still use explicit planning or self-critique prompts (see Section 5).
 
+**Audit note**: a "step by step" match in a Gemini prompt is still an AP-2 hit (flag it as usual) -- Google's own best-practice template ends with `Remember to think step-by-step before answering.`, so deleting it is low-risk.
+
 ### 1.3 Use the `thinking_level` Parameter
 
 Controls the *maximum* reasoning depth via API/interface settings. Prompt text still has influence -- Google notes that phrasing like "Think very hard before answering" can increase reasoning within the level's ceiling.
 
 | Level | Latency | Cost | Use For |
 |-------|---------|------|---------|
-| `"minimal"` (Gemini 3.5 Flash only -- **not** supported on 3.1 Pro) | Fastest | Lowest | Trivial lookups, near-zero reasoning |
-| `"low"` | Fast | Lower | Simple queries, extraction, formatting, lookups |
-| `"medium"` (default on Gemini 3.5 Flash) | Moderate | Moderate | Balanced everyday tasks |
-| `"high"` | Slower | Higher | Research, planning, creative writing, complex problems |
+| `"minimal"` (3.5/3.6 Flash, Flash-Lite models, 3 Flash -- **error** on 3.7 Flash, 3.8 Flash and 3.1 Pro) | Fastest | Lowest | Trivial lookups, near-zero reasoning |
+| `"low"` | Fast | Lower | Latency-critical work (incident response, real-time chat, drafts), extraction, formatting, lookups |
+| `"medium"` | Moderate | Moderate | Most tasks, including complex code and agents (higher first-pass accuracy) |
+| `"high"` | Slower | Higher | Deep reasoning, math, hard multi-step work, research, planning |
 
-**Never send `thinking_budget` together with `thinking_level`** in the same request -- the API returns a 400 error. Pick one mechanism (prefer `thinking_level` on current models).
+**Defaults differ per model**: `medium` on 3.5/3.6/3.7/3.8 Flash; `high` on 3.1 Pro and 3 Flash; `minimal` on 3.5 Flash-Lite and 3.1 Flash-Lite. Coming from 3.1 Pro, the default drops from `high` to `medium`; coming from 3.5/3.6 Flash to 3.7/3.8, map any `minimal` usage to `low`.
+
+**Never send `thinking_budget` together with `thinking_level`** in the same request -- the API returns a 400 error. `thinking_budget` is "no longer recommended" (AI Studio) / "deprecated" (Vertex) and kept only for backward compatibility; whether 3.7/3.8 Flash still accept it alone is unverified (Verify). Use `thinking_level`.
+
+**3.8 Flash cost note**: it spends more tokens by design (smaller reasoning steps, iterative tool calls, self-verification), especially at higher levels. Use `low` for everyday tasks, or stay on 3.7 Flash for efficiency-first workloads. Intro price $0.75/$3.75 per 1M runs to Dec 31 2026, then $1.50/$7.50 from Jan 1 2027 (same intro/then pricing on 3.6 and 3.7 Flash).
 
 ### 1.4 Omit Sampling Parameters
 
-**CRITICAL**: Current official Google guidance is to **OMIT** `temperature`, `top_p`, and `top_k` entirely and let the model use its defaults.
+**CRITICAL**: **OMIT** `temperature`, `top_p`, and `top_k` entirely. They were formally **deprecated on Jul 21 2026**.
 
-- Setting sub-1.0 temperature **may** cause looping and degraded performance on reasoning tasks (Google's wording -- not a guaranteed failure)
+- **3.6 Flash and later, and 3.5 Flash-Lite**: the API silently **ignores** them (a no-op, not an error -- easy to miss in audits). Google says "future model generations" will return **400**.
+- **3.5 Flash, 3.1 Pro, 3 Flash**: still honored, and sub-1.0 temperature **may** cause looping and degraded performance on reasoning tasks (Google's wording -- not a guaranteed failure)
+- On 3.8 Flash, `frequency_penalty`, `presence_penalty` and `candidate_count` return an **error**. Remove them too (`candidate_count` is unsupported on all 3.x)
 - Do not carry over sampling-param tuning from earlier Gemini generations
-- Steer style, tone, and variety through the prompt instead of sampling knobs
+- For determinism, define a system instruction with explicit rules and add a response schema (or fix `thinking_level`); steer style, tone, and variety through the prompt
+- **Prefill is gone**: a request whose last non-empty turn is a `model` turn returns **400** on 3.6 Flash and later. Anchor output with `system_instruction` or a response schema
 - This mirrors an industry-wide shift: Claude current-gen returns 400 on **non-default** values of these params (defaults still accepted; `top_k` rejected outright), DeepSeek thinking mode ignores them
 
 ### 1.5 Use Consistent Structure
@@ -90,11 +101,14 @@ Explain how async/await works in JavaScript.
 
 ### Order Matters
 
-> **Corrected July 2026.** Earlier editions of this guide told you to put
-> formatting and negative constraints **last**. Google's prompting-strategies
-> documentation says the opposite: **essential constraints and output-format
-> requirements belong in the system instruction, at the beginning.** Only the
-> *specific question* goes last, and only when it follows a long context.
+> **Rewritten September 2026.** Earlier editions told you to put formatting and
+> negative constraints **last**. That rule came from the Vertex Gemini 3
+> prompting guide, which now returns 404 (last archived May 2026). Google's live
+> prompting-strategies documentation says: put "essential behavioral
+> constraints, role definitions (persona), **and output format requirements**" in
+> the system instruction or at the very beginning. Only the *specific question*
+> goes last, and only when it follows a long context. Google's Vertex
+> prompt-design page still suggests an optional end-of-prompt recap.
 
 Put every constraint that governs behavior or output shape **at the TOP**, in
 the system instruction where possible. The "last" slot is reserved for the
@@ -106,6 +120,7 @@ a question buried above 100K tokens of source material gets lost.
 2. Context and source material
 3. Main task instructions
 4. The specific question -- LAST (this is the long-context rule, not a constraint rule)
+5. Optional: a short recap of hard negative/quantitative limits at the very end
 
 **Bad** (constraints stranded after a long context, competing with the data for attention):
 ```
@@ -181,7 +196,7 @@ Gemini treats text, images, audio, and video as equal-class inputs. Without expl
 
 ### Output Verbosity Control
 
-Gemini 3.x defaults to **concise** responses.
+Gemini 3.x defaults to **terse** responses; ask explicitly for a conversational or detailed style.
 
 | Desired Style | Prompt Addition |
 |---------------|-----------------|
@@ -192,8 +207,7 @@ Gemini 3.x defaults to **concise** responses.
 
 ### Structured Output for Format Anchoring
 
-The Gemini API has **no `prefix` parameter**. To enforce output shape, use the
-structured-output config on `generate_content`:
+The Gemini API has **no `prefix` parameter**, and a request ending in a `model` turn is a 400 on 3.6+. To enforce output shape, use structured output. On `generate_content` (legacy, fully supported):
 
 ```python
 from google import genai
@@ -205,7 +219,7 @@ class User(BaseModel):
 
 client = genai.Client()
 response = client.models.generate_content(
-    model="gemini-3.5-flash",
+    model="gemini-3.8-flash",
     contents="Return user data as JSON: ...",
     config={
         "response_mime_type": "application/json",
@@ -213,6 +227,8 @@ response = client.models.generate_content(
     },
 )
 ```
+
+On the Interactions API (GA, recommended) `response_mime_type` is removed; use `response_format: {type: "text", mime_type: "application/json", schema: {...}}`.
 
 Where a schema is overkill, anchor the format in the prompt text instead
 ("Respond with a single JSON object and no prose.").
@@ -299,7 +315,7 @@ Do not introduce external information or common knowledge.
 
 ## 7. Few-Shot Examples (Gemini-Specific)
 
-Google recommends 2-3 few-shot examples for Gemini (more than other providers):
+Google recommends **always** including few-shot examples for Gemini ("prompts without few-shot examples are likely to be less effective"), more than other providers. Use "a few" and experiment:
 
 ```
 **Consistent formatting is critical** -- maintain identical structure across all examples.
@@ -319,16 +335,16 @@ Output:
 
 **Best practices**:
 - Show positive patterns (correct behavior) rather than what to avoid
-- 2-3 examples typically sufficient
-- Excessive examples risk overfitting
-- Use output prefixes to anchor format
+- Use a few examples and experiment with the count; too many overfit
+- Format demos only -- no reasoning steps inside examples
+- Use output prefixes inside the examples to anchor format
 
 ---
 
 ## 8. Persona Usage
 
-- Gemini 3.x treats assigned personas **very seriously**
-- The model may ignore instructions that conflict with the persona
+- Put the persona at the top (system instruction)
+- Gemini 3.x treats assigned personas **very seriously**; the model may ignore instructions that conflict with the persona (this rule comes from the archived Vertex guide -- keep it, but treat it as historical)
 - Avoid ambiguous scenarios when using personas
 - Be explicit about persona boundaries
 
@@ -349,6 +365,8 @@ You are a strict code reviewer. You reject code with any security vulnerabilitie
 ## 9. Gemini Deep Research
 
 ### Core Functionality
+
+*(Figures in this Deep Research section — "40-250+ sites", "$20/mo", "30k characters" — are carried over; not re-verified this cycle.)*
 
 Gemini Deep Research is an autonomous AI assistant that analyzes 40-250+ websites to produce comprehensive, multi-page reports with full citations. It iteratively searches, learns, and synthesizes information.
 
@@ -399,40 +417,45 @@ Deliverables: Executive summary, competitor comparison table, risk analysis.
 
 ```
 DO:
-- OMIT temperature/top_p/top_k entirely (defaults; sub-1.0 causes looping)
-- Use thinking_level: "minimal" | "low" | "medium" (default on 3.5 Flash) | "high"
+- OMIT temperature/top_p/top_k entirely (deprecated Jul 21 2026; ignored on 3.6+, 400 on future generations, can loop on 3.5 Flash/3.1 Pro/3 Flash)
+- Use thinking_level per model: 3.8/3.7 Flash = low|medium(default)|high; 3.6/3.5 Flash = minimal|low|medium(default)|high; 3.1 Pro = low|medium|high(default)
 - Never send thinking_budget + thinking_level together (400 error)
-- Return thought signatures in stateless multi-turn function calling
+- Return thought signatures unmodified in stateless multi-turn function calling (even across model switches)
 - State the current year for time-sensitive queries (3.5 Flash cutoff Jan 2025)
-- Be direct and concise
-- Put context FIRST, questions LAST
-- Put CONSTRAINTS at END (critical -- dropped if early!)
-- Use 2-3 few-shot examples with consistent formatting
+- Be direct; ask explicitly for a longer/conversational style (default is terse)
+- Put persona, behavioral constraints AND output-format requirements at the TOP (system instruction)
+- Put context FIRST, the specific question LAST
+- Include a few examples with identical formatting
 - Anchor transitions: "Based on the above..."
 - Label multimodal inputs explicitly
 
 DON'T:
-- Set temperature/top_p/top_k below defaults (causes loops/degradation) -- prefer omitting entirely
-- Put constraints (behavioral OR formatting) at the END instead of the system instruction
+- Send temperature/top_p/top_k at all; on 3.8 also frequency_penalty/presence_penalty/candidate_count (error)
+- End a request with a prefilled model turn (400 on 3.6+)
+- Send thinking_level "minimal" to 3.7/3.8 Flash or 3.1 Pro (error)
 - Bury the specific question above a long context
 - Use conversational language ("please", "kindly")
 - Use complex CoT from Gemini 2.x era
 - Use broad "do not infer" (be specific instead)
+- Demand XML/JSON status text right before a tool call (Malformed_Function_Call)
 
-CONSTRAINT ORDER (CRITICAL):
+PROMPT ORDER:
 1. System instruction: persona/tone/safety AND output-format rules -- TOP
 2. Context/source material
 3. Main task
-4. The specific question LAST (long-context rule -- keeps the ask from being buried)
+4. The specific question LAST (keeps the ask from being buried)
+5. Optional recap of hard limits at the very end
 
-VERBOSITY: Default = concise
+VERBOSITY: Default = terse
 - More verbose: "Explain as friendly, talkative assistant"
-- Faster: thinking_level=LOW + "Think silently"
+- Faster: thinking_level=low + "Think silently"
 
 TEMPLATE:
+<role>[persona]</role>
+<constraints>[behavioral + output-format rules -- TOP]</constraints>
 <context>[all background first]</context>
 <task>[direct instruction -- no fluff]</task>
-<constraints>[negative/formatting limits LAST]</constraints>
+<final_instruction>[optional recap of hard limits]</final_instruction>
 ```
 
 ---
@@ -478,31 +501,57 @@ You are precise, analytical, and direct.
 </task>
 
 <final_instruction>
-[last-minute clarifications or constraints]
+[optional recap of hard limits]
 </final_instruction>
 ```
 
 ---
 
-## 12. Function Calling (Stateless Multi-Turn)
+## 12. Function Calling
+
+### State: Interactions API vs Stateless
+
+The Interactions API (GA, recommended) defaults to stateful mode (`store: true` + `previous_interaction_id`): the server handles thought signatures and reasoning carry-over, so you do nothing. Retention is 55 days on the paid tier, 1 day on the free tier; `store=false` gives stateless mode. On `generateContent` (legacy) or any stateless setup you manage history yourself, and the rules below apply.
 
 ### Thought Signatures
 
-When using function calling in a stateless multi-turn setup (you manage conversation history yourself, rather than a server-side Live session), Gemini 3.x returns **thought signatures** alongside function calls. These signatures must be sent back unmodified in the next turn's request history. Dropping or altering them breaks reasoning continuity and degrades multi-turn tool-use quality.
+In stateless multi-turn, Gemini 3.x returns **thought signatures**. Resend all thought blocks **exactly as received** in the next turn's history; dropping or altering them breaks reasoning continuity and degrades multi-turn tool-use quality.
+
+- Resend the previous model's thought blocks even when you **switch models** mid-session
+- Built-in tools (e.g. Google Search) carry their own signatures on their call and result blocks; resend those too
+- Interactions API: signatures appear only on thought steps and built-in tool steps. `generateContent`: a signature can sit on any part, including inside `functionCall` parts
+- From 3.5 Flash on, `generateContent` reuses reasoning from earlier turns when signatures are present -- pass the full, unmodified history
 
 ### Strict Function-Response Matching
 
-Each function call must be matched by exactly **one** function response, matched by both `id` and `name`. Do not:
+Each function call must be matched by exactly **one** function response, matched by both `id` (Interactions: `call_id`) and `name`. Do not:
 - Omit a response for a call the model made
 - Send multiple responses for a single call
 - Mismatch the `id`/`name` pairing between call and response
 
-Violating this contract causes errors or malformed conversation state in subsequent turns.
+The Interactions API returns an error on a mismatch. `generateContent` does not error, but in most cases returns an **empty response with `finish_reason: STOP`** -- easy to misread as a model failure.
+
+### Function-Response Content
+
+- Put multimodal content **inside** the function response parts, not beside them (content outside can cause "thought leakage")
+- Append extra instructions to the **end of the function-response text, separated by `\n\n`**, not as separate parts
+
+### Pre-Tool Text
+
+If a prompt makes the model emit structured text (`<UPDATE>...</UPDATE>`, XML, YAML, JSON) right before a tool call, the call can fail with `Malformed_Function_Call`. Preferred fix: declare an `update(previous_step, plan, next_step, external)` function and tell the model to call it before other tools. Alternatives: Markdown headers (`# UPDATE`) instead of structured text, or do not require pre-tool text.
+
+### Tool Set and Over-Calling
+
+- Keep the active set to **10-20 tools** maximum
+- `tool_choice` modes: `auto` (default), `any`, `none`, `validated`
+- To reduce tool over-calling, first lower `thinking_level`; if that is not enough, add "You have a limited action budget of <n> tool calls. Use them efficiently."
 
 ---
 
 ## References
 
-- [Vertex AI Gemini 3.x Prompting Guide](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/gemini-3-prompting-guide)
+- [Vertex AI Overview of Prompting Strategies](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/prompts/prompt-design-strategies)
+- [Vertex AI Gemini 3.x Prompting Guide](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/gemini-3-prompting-guide) (now 404; last archived May 15 2026 -- source of the historical persona rule)
 - [Google AI Prompting Strategies](https://ai.google.dev/gemini-api/docs/prompting-strategies)
-- [Official Google Gemini 3 Prompting Guidelines](https://ai.google.dev/gemini-api/docs)
+- [Gemini API: What's new in Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/latest-model)
+- [Gemini API: Function calling](https://ai.google.dev/gemini-api/docs/function-calling)

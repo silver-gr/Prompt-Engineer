@@ -1,4 +1,4 @@
-# Evaluation & Optimization Methodologies (2026 Edition)
+# Evaluation & Optimization Methodologies (September 2026 Edition)
 
 This module documents systematic approaches to prompt evaluation, regression testing, CI/CD pipelines, and LLM-as-judge patterns.
 
@@ -40,7 +40,8 @@ class PromptDevelopmentLifecycle:
             self.current_prompt = clarify_output_format(self.current_prompt)
         # DON'T add (when thinking is ENABLED): CoT instructions, reasoning steps.
         # Manual CoT remains a documented fallback when thinking is OFF.
-        # Examples: Anthropic recommends 3-5; treat >5 as the warning threshold.
+        # Examples (AP-3): Claude 3-5 recommended, Gemini always a few (identical formatting);
+        # GPT/other reasoning models: flag >2 examples or any example showing reasoning steps.
         return self.current_prompt
 
     def iterate(self, max_iterations=5):
@@ -59,9 +60,9 @@ class PromptDevelopmentLifecycle:
 1. **Context quality** -- highest ROI
 2. **Output format clarity** -- high impact
 3. **Instruction clarity** -- medium impact
-4. **Examples** -- variable impact. Anthropic recommends **3-5 diverse, relevant examples**
-   in `<example>` tags, especially for format/edge-case demos. Measure before trimming;
-   only past ~5 does redundancy start to cost more than it buys.
+4. **Examples** -- variable impact, family-dependent (AP-3). Claude: **3-5 diverse, relevant
+   examples** in `<example>` tags. Gemini: always a few, identically formatted. GPT and other
+   reasoning models: 0-2 format-only. Measure before trimming.
 5. **CoT instructions** -- negative impact **when extended thinking is enabled** (duplicates
    native reasoning). When thinking is OFF, manual CoT is a documented, supported fallback.
 
@@ -100,7 +101,7 @@ def evaluate_prompt_performance(prompt, test_cases, model, thinking_enabled=True
         'token_count': count_tokens(prompt),
         # Redundant only when the target model reasons natively
         'has_unnecessary_cot': detect_cot_instructions(prompt) and thinking_enabled,
-        'has_excessive_examples': count_examples(prompt) > 5   # 3-5 is vendor-recommended
+        'has_excessive_examples': count_examples(prompt) > example_ceiling(target_family)   # AP-3: 2 for GPT/other; Claude 5; Gemini a few
     }
 
     # Apply penalties for anti-patterns
@@ -231,8 +232,8 @@ def distill_prompt(complex_prompt, model, test_cases, thinking_enabled=True):
         # Only redundant when the model reasons natively. With thinking OFF,
         # manual CoT is a supported fallback -- keep it.
         *([('cot_instructions', remove_cot)] if thinking_enabled else []),
-        # Anthropic recommends 3-5 examples; trim only the surplus past 5.
-        ('surplus_examples', remove_examples_beyond_five),
+        # AP-3 ceiling is per family (GPT/other 2, Claude 5, Gemini a few).
+        ('surplus_examples', remove_examples_beyond_family_ceiling),
         ('fluff', remove_conversational_padding),
         ('verbose_instructions', simplify_task_description),
     ]
@@ -265,8 +266,9 @@ class ContextQualityAnalyzer:
             # Anti-pattern detection
             # CoT only counts as an anti-pattern when thinking is on
             'redundant_cot': detect_cot(prompt) and thinking_enabled,
-            # Anthropic's guidance is 3-5 examples; flag only past 5
-            'excessive_examples': count_examples(prompt) > 5,
+            # AP-3: Claude (3-5) and Gemini (a few) exempt; GPT/other reasoning models flag >2 or reasoning-showing examples
+            'excessive_examples': target_family not in ('claude', 'gemini')
+                and (count_examples(prompt) > 2 or examples_show_reasoning(prompt)),
             'conversational_fluff': detect_fluff(prompt),
             'complexity_score': measure_complexity(prompt)
         }
@@ -277,7 +279,7 @@ class ContextQualityAnalyzer:
         if analysis['redundant_cot']:
             recommendations.append("Remove CoT instructions -- thinking is on, so they duplicate native reasoning")
         if analysis['excessive_examples']:
-            recommendations.append("Trim to 3-5 diverse, relevant examples")
+            recommendations.append("Trim to 0-2 format-only examples (Claude: 3-5 diverse; Gemini: a few, identically formatted)")
         if analysis['conversational_fluff']:
             recommendations.append("Remove conversational padding")
 
@@ -324,6 +326,9 @@ class PromptRegressionSuite:
             'new_results': new_results
         }
 
+    # Run old and new prompt on the SAME model in the same session: a prompt change
+    # and a model change evaluated together are uninterpretable.
+
     def evaluate(self, prompt, model):
         results = {'accuracy': [], 'consistency': [], 'format_compliance': []}
 
@@ -344,6 +349,14 @@ class PromptRegressionSuite:
 
         return {k: sum(v)/len(v) for k, v in results.items()}
 ```
+
+### Model-Change Eval Posture
+
+Effort does not transfer across models. When the target model changes, re-run the suite:
+
+- Compare at the **same effort and one level lower** -- newer models often match the old model's quality at a lower level.
+- Measure **cost per successful task**, not per token. Fewer tokens is a win only if the evals still pass.
+- Do not carry an effort level, sampling setting or thinking mode over unchecked; see 03-model-catalog_v5.md for per-model defaults.
 
 ### Golden Example Management
 
@@ -483,6 +496,10 @@ You are an expert evaluator assessing AI assistant responses.
 {input}
 </input>
 
+<reference_answer>
+{reference}
+</reference_answer>
+
 <response_to_evaluate>
 {response}
 </response_to_evaluate>
@@ -543,7 +560,7 @@ def multi_judge_evaluation(response, task, criteria, judge_models):
             response=response['output'],
             criteria=format_criteria(criteria)
         )
-        judgment = judge_model.generate(prompt, temperature=0.3)
+        judgment = judge_model.generate(prompt)  # determinism comes from the rubric/output format, not temperature, on current models
         judge_scores.append(parse_judgment(judgment))
 
     # Consensus: average scores, flag high variance
@@ -565,7 +582,15 @@ def multi_judge_evaluation(response, task, criteria, judge_models):
 
 ### Judge Calibration
 
-**Problem**: LLM judges can be biased (e.g., prefer verbose responses).
+**Problem**: LLM judges can be biased.
+
+| Failure mode | Symptom | Mitigation |
+|--------------|---------|------------|
+| Verbosity bias | Longer answers score higher regardless of content (mainly reference-free grading; not observed under rubric + reference grading) | Supply `<reference_answer>`; penalize length explicitly in criteria |
+| Anchoring | Prior scores, attempt counts or "revised" framing in judge context shift scores; CoT and warnings do not remove it | Strip them from judge context |
+| Authorship labels | Judge favors output labelled as its own | Blind self/other labels |
+| Single-judge variance | One judge, no error estimate | Multi-judge consensus (above) |
+| Criteria collapse | One global impression across all criteria | Per-criterion JSON scores plus an issues list |
 
 ```python
 def calibrate_judge(judge_model, calibration_set):
@@ -591,25 +616,29 @@ def calibrate_judge(judge_model, calibration_set):
 
 ## 11. Model-Specific Optimization Functions
 
-### Claude Optimization
+Effort does not transfer across models; set it per target and re-evaluate on model change.
+
+### Claude Optimization (Fable 5.1 / Opus 5.5 / Sonnet 5.5)
 
 ```python
 def optimize_for_claude(prompt):
     structured = structure_with_xml(prompt)
     if context_richness(structured) < 0.7:
         structured = enrich_context(structured)
+    # Config, not prompt text: output_config={'effort': ...}. Omit the default.
+    # Thinking cannot be disabled on Fable 5.1 / Opus 5.5 / Sonnet 5.5 (400).
     return structured
 ```
 
-### GPT-5 Optimization
+### GPT-6 / GPT-5.6 Optimization
 
 ```python
-def optimize_for_gpt5(prompt, complexity):
+def optimize_for_gpt(prompt, complexity, model='gpt-6-astra'):
     structured = structure_with_markdown(prompt)
-    config = {'prompt': structured, 'reasoning_effort': 'medium'}
+    # Astra: 'none' -> 400; lowest valid is 'low'. Sol/Luna and GPT-5.6 accept 'none'.
+    config = {'model': model, 'input': structured, 'reasoning': {'effort': 'medium'}}
     if complexity == 'high':
-        config['reasoning_effort'] = 'high'
-        config['prompt'] += "\n\nVerify your answer before responding."
+        config['reasoning']['effort'] = 'high'
     return config
 ```
 
@@ -621,8 +650,9 @@ def optimize_for_gemini(prompt):
     structured = structure_clearly(cleaned)
     return {
         'prompt': structured,
-        # omit temperature/top_p/top_k -- 1.0 default is what Google recommends
-        'thinking': {'thinking_level': 'medium'},   # minimal|low|medium|high
+        # omit temperature/top_p/top_k -- deprecated Jul 21 2026; 1.0 default is recommended
+        # 3.8 / 3.7 Flash: low|medium|high (minimal -> error); 3.6 Flash: minimal|low|medium|high
+        'thinking': {'thinking_level': 'medium'},
     }
 ```
 

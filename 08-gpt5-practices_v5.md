@@ -1,15 +1,15 @@
-# GPT-5 Practices (OpenAI, March 2026)
+# GPT-5 & GPT-6 Practices (OpenAI, September 2026)
 
-This is the dedicated module for GPT-5 family prompting guidance -- the first time GPT-5 gets its own reference (Claude and Gemini already had theirs).
+This is the dedicated module for OpenAI GPT prompting guidance: the GPT-6 family (Astra, Sol, Luna) and the GPT-5.x generations that remain live (5.6, 5.5 and earlier).
 
-> **Model specs**: See 03-model-catalog_v5.md for GPT-5 family data.
+> **Model specs**: See 03-model-catalog_v5.md for GPT-6 and GPT-5 family data.
 > **Anti-patterns**: See 02-techniques-patterns_v5.md (canonical).
 
 ---
 
 ## 1. Core Philosophy: Less Is More
 
-GPT-5 models perform best with **minimal, direct prompts**. Adding unnecessary instructions, verbose descriptions, or elaborate frameworks actively reduces quality. This is the single most important principle for GPT-5.
+GPT-5 and GPT-6 models perform best with **minimal, direct prompts**. Adding unnecessary instructions, verbose descriptions, or elaborate frameworks actively reduces quality. This is the single most important principle for the GPT family. OpenAI's own runs show the payoff: leaner prompts gave +10-15% eval score, -41-66% tokens and -33-67% cost (internal, directional). GPT-6 Astra follows longer instructions better than earlier models, so the harm is instability from conflicting or excess rules, not length alone; recipe-style, over-specific guidance can now hinder results.
 
 ---
 
@@ -17,34 +17,46 @@ GPT-5 models perform best with **minimal, direct prompts**. Adding unnecessary i
 
 ### Current API Surface
 
-The **Responses API** is the current recommended surface for GPT-5.x. Chat Completions remains supported -- it is not deprecated, it just uses flat parameter names (`reasoning_effort`) where Responses uses nested ones (`reasoning.effort`). Reasoning depth and output length are controlled by two independent parameters: `reasoning.effort` and `text.verbosity`.
+The **Responses API** is the current recommended surface for GPT-5.x and GPT-6 (GPT-6 Astra function calling requires it). Chat Completions remains supported -- it is not deprecated, it just uses flat parameter names (`reasoning_effort`) where Responses uses nested ones (`reasoning.effort`). Reasoning depth and output length are controlled by two independent parameters: `reasoning.effort` and `text.verbosity`. `reasoning.mode` (`standard` | `pro`, Responses only, GPT-5.6 and GPT-6) is a third independent knob and replaces separate Pro model slugs for 5.6+.
 
 ### `reasoning.effort` Selection
 
 | Effort | Latency | Use For |
 |--------|---------|---------|
-| `"minimal"` | Ultra-fast | GPT-5 (base) only -- lowest reasoning tier on that model |
-| `"none"` | Ultra-fast | Zero reasoning overhead, trivial/simple tasks |
+| `"minimal"` | Ultra-fast | Older models only (e.g. GPT-5 base) -- lowest reasoning tier there; migrate to `low` |
+| `"none"` | Ultra-fast | Zero reasoning overhead, trivial/simple tasks. **HTTP 400 on GPT-6 Astra** (use `low`) |
 | `"low"` | Fast | Simple queries, lookups, formatting |
 | `"medium"` | Default | General tasks, standard reasoning |
 | `"high"` | Slower | Complex analysis, multi-step problems |
 | `"xhigh"` | Slower still | Deep research, hard agentic/multi-step tasks needing maximum depth |
-| `"max"` | Slowest | GPT-5.6 only -- new top tier |
+| `"max"` | Slowest | GPT-5.6 and later (all GPT-6 tiers) -- top tier |
 
 **The enum is model-specific -- do not assume one set across the family:**
 
 | Model | Supported values | Default |
 |-------|-----------------|---------|
-| GPT-5 (base) | `minimal` / `low` / `medium` / `high` | `medium` |
-| GPT-5.2 | `none` / `low` / `medium` / `high` / `xhigh` | `none` |
+| GPT-5 (base) | `minimal` / `low` / `medium` / `high` (not re-verified this cycle — Verify) | `medium` |
+| GPT-5.2 | `none` / `low` / `medium` / `high` / `xhigh` (not re-verified this cycle — Verify) | `none` |
 | GPT-5.5 | `none` / `low` / `medium` / `high` / `xhigh` | `medium` |
+| GPT-5.5 Pro | `medium` / `high` / `xhigh` | `high` |
 | GPT-5.6 Sol / Terra / Luna | `none` / `low` / `medium` / `high` / `xhigh` / `max` | `medium` |
+| GPT-6 Astra | `low` / `medium` / `high` / `xhigh` / `max` (`none` -> HTTP 400) | not documented |
+| GPT-6 Sol / Luna | `none` / `low` / `medium` / `high` / `xhigh` / `max` | `medium` |
 
-Passing `xhigh` or `none` to GPT-5 (base), or `max` to anything below 5.6, is an error.
+Passing `xhigh` or `none` to GPT-5 (base) (not re-verified this cycle — Verify), `none` to GPT-6 Astra, or `max` to anything below 5.6, is an error. Effort values do not transfer across models: preserve your current *effective* effort where supported, and sweep per model.
 
 > **Parameter naming**: `reasoning.effort` is the **Responses API** spelling.
 > Chat Completions uses the flat `reasoning_effort`. Both surfaces are supported;
 > Responses is the recommended one for new integrations.
+
+### Related Config (Responses API)
+
+| Knob | Governs |
+|------|---------|
+| `reasoning.mode` | `standard` (default) or `pro`; independent of effort; Pro bills aggregated tokens at standard rates |
+| `reasoning.context` | Which prior-turn reasoning is kept: `auto` (= `all_turns`, the default on 5.6+), `all_turns`, `current_turn` (default on earlier models) |
+| `configuration_update` (GPT-6) | Input item that changes effort mid-conversation and keeps the cache prefix. No adjacent updates; incompatible with auto-compaction |
+| `prompt_cache_options.ttl` (5.6+) | `"30m"`; replaces `prompt_cache_retention`, which applies to 5.5 and earlier only |
 
 ### `text.verbosity` Selection
 
@@ -56,11 +68,13 @@ Independent of reasoning effort, `text.verbosity` controls output length and det
 | `"medium"` | Default. General responses |
 | `"high"` | Detailed explanations, long-form writing |
 
+Documented on `gpt-6-astra`; support on GPT-6 Sol/Luna is not stated (Verify). GPT-5.6+ is more concise by default than 5.5, so a blunt "be concise" over-truncates: use `text.verbosity`, and say what a short answer must keep.
+
 ### Implementation
 
 ```json
 {
-  "model": "gpt-5.5",
+  "model": "gpt-5.6-sol",
   "reasoning": {"effort": "high"},
   "text": {"verbosity": "medium"},
   "input": [
@@ -74,15 +88,17 @@ Independent of reasoning effort, `text.verbosity` controls output length and det
 
 - **None/Low**: Fast responses. Add persistence reminders for agentic tasks -- model may stop early.
 - **Medium**: Default. Good for most tasks. No special considerations.
-- **High/xhigh**: Complex work. Combine with verification scaffolds: "List assumptions", "Verify answer".
+- **High/xhigh (GPT-5.6 and earlier)**: Complex work. Concrete validation steps pay off: "List assumptions", "Check the answer against the contract".
+- **GPT-6 Astra**: Verification is native and over-applied at every tier -- calibrate it down rather than adding scaffolds.
+- **Before raising effort**: check the prompt for a missing success criterion, dependency rule, tool-routing rule or verification loop. Effort is a tuning knob, not the quality fix.
 
-**Critical**: Agentic persistence reminders are essential at none/low/medium reasoning effort. The model may conclude tasks prematurely without them.
+**Critical**: On GPT-5.x, agentic persistence reminders are essential at none/low/medium reasoning effort; the model may conclude tasks prematurely without them. On GPT-6 Astra, early stopping and approval-seeking is a model trait at every effort level (Section 7).
 
 ```
 Continue working until the task is fully complete. Do not stop early.
 ```
 
-> **Correction**: earlier editions of this guide described a `reasoning_profile: "light" | "balanced" | "deep"` parameter for GPT-5.2. **No such parameter appears in OpenAI's GPT-5.2 documentation** -- GPT-5.2 uses `reasoning.effort` (`none` default, plus `low`/`medium`/`high`/`xhigh`) like the rest of the family. Disregard any prompt or integration built against `reasoning_profile`.
+> **Correction**: earlier editions of this guide described a `reasoning_profile: "light" | "balanced" | "deep"` parameter for GPT-5.2. **`reasoning_profile` does not exist** in any OpenAI model's API -- GPT-5.2 uses `reasoning.effort` (`none` default, plus `low`/`medium`/`high`/`xhigh`; not re-verified this cycle — Verify) like the rest of the family. Disregard any prompt or integration built against `reasoning_profile`.
 
 ---
 
@@ -90,28 +106,22 @@ Continue working until the task is fully complete. Do not stop early.
 
 ### Recommended Format
 
-Earlier GPT-5 guidance was Markdown-only. Current guidance now recommends **XML tags** for structuring prompts as well -- both work, but XML is preferred for agentic/tool-heavy prompts where section boundaries need to be unambiguous.
+OpenAI's suggested structure for GPT-5.5/5.6 and later is Role, Personality, Goal, Success criteria, Constraints, Tools, Output, Stop rules. Keep each section short, and use only the sections the task needs.
 
 ```markdown
-## Task
-[concise instruction]
-
-## Context
-[relevant background -- keep minimal]
-
-## Input
-[data to process]
-
-## Output Format
-[JSON schema or format spec]
+## Role
+## Personality
+## Goal
+## Success criteria
+## Constraints
+## Tools
+## Output
+## Stop rules
 ```
 
-```xml
-<task>[concise instruction]</task>
-<context>[relevant background -- keep minimal]</context>
-<input>[data to process]</input>
-<output_format>[JSON schema or format spec]</output_format>
-```
+Section headers can be swapped for XML tags (`<role>`, `<goal>`, `<constraints>`, `<output>`) -- both work, and XML is preferred for agentic/tool-heavy prompts where section boundaries need to be unambiguous. Keep one convention per prompt.
+
+Use ALWAYS/NEVER/must only for true invariants; for judgment calls prefer decision rules. GPT models follow prompt contracts closely, so conflicting rules create more instability than missing detail.
 
 ### System Messages
 
@@ -143,7 +153,7 @@ GPT-5 has excellent native JSON mode:
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-5.2",
+    model="gpt-5.6-sol",
     response_format={"type": "json_object"},
     messages=[
         {"role": "system", "content": "Return valid JSON."},
@@ -162,13 +172,13 @@ response = client.chat.completions.create(
 
 ## 5. Tool Descriptions
 
-Keep tool descriptions **crisp** -- 1-2 sentences maximum.
+Keep tool descriptions **concise and precise**. State what the tool does, **when to use it**, important return fields and error behavior. Expose only task-relevant tools.
 
 **Good**:
 ```json
 {
   "name": "search_database",
-  "description": "Search customers by name or ID. Returns customer details.",
+  "description": "Search customers by name or ID. Use before any customer-specific action. Returns customer details; errors if no match.",
   "parameters": {
     "query": {"type": "string", "description": "Name or customer ID"},
     "field": {"type": "string", "enum": ["name", "id"]}
@@ -185,7 +195,7 @@ Keep tool descriptions **crisp** -- 1-2 sentences maximum.
 }
 ```
 
-GPT-5 infers tool usage well from concise descriptions. Verbose descriptions actually degrade performance.
+Verbose or redundant descriptions, and irrelevant tools left exposed, degrade tool selection.
 
 ---
 
@@ -195,7 +205,8 @@ GPT-5 infers tool usage well from concise descriptions. Verbose descriptions act
 - Specify language and target environment
 - State success criteria clearly
 - Avoid over-specification -- GPT-5 writes better code with less constraint
-- Lower temperature (0.1-0.3) for deterministic output
+- Do not rely on sampling params: on GPT-6, remove `temperature`, `top_p`, `top_logprobs` and `logprobs` when effort is not `none` (whether they error or are ignored: Verify)
+- GPT-5.6: keep explicit validation (targeted tests, type check, build, smoke test) -- OpenAI recommends it. GPT-6 Astra over-tests: calibrate down ("Do not write tests for reversible, low-impact changes that mirror the implementation")
 
 ### Pattern
 ```
@@ -207,65 +218,106 @@ Write a Python function that:
 Return the function with 3 test cases.
 ```
 
-**Don't**: Prescribe algorithm, specify variable names, or dictate code structure. Let GPT-5 make those decisions.
+**Don't**: Prescribe algorithm, specify variable names, or dictate code structure. Let the model make those decisions.
 
 ---
 
-## 7. GPT-5.5 (Prior Flagship)
+## 7. Model Generations: GPT-6, GPT-5.6, GPT-5.5
 
-**GPT-5.6 Sol is the current flagship** -- the `gpt-5.6` alias routes to `gpt-5.6-sol`. GPT-5.5 is the prior flagship, still widely deployed and accessed via the Responses API. GPT-5.2 Thinking -- once "SOTA for chatbot use" -- is superseded for new integrations but remains supported.
+### Naming (highest-risk item)
 
-Key characteristics:
-- Frontier reasoning via `reasoning.effort` control (see Section 2)
-- Cleaner formatting and less verbosity than predecessors
-- Strong instruction adherence
-- Excellent tool grounding
+- **GPT-6 order: Astra (top) > Sol (middle) > Luna (bottom).**
+- GPT-6 Sol/Luna are **successors to**, not the same models as, GPT-5.6 Sol/Luna (different IDs, prices, cutoffs and parameter rules).
+- **"Sol" names a different tier per generation.** In GPT-5.6 Sol is the flagship (about the unsuffixed tier; Terra ~ mini, Luna ~ nano). In GPT-6, Astra is the flagship and Sol is the middle tier.
+- **Terra has no GPT-6 successor**, and Astra is not a renamed Terra. All GPT-5.6 models (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`) remain live, with no deprecation notice.
 
-### When to Use GPT-5.5 vs GPT-5.3 Instant
+### GPT-6 (Astra, Sol, Luna)
 
-| Scenario | Use |
-|----------|-----|
-| Complex analysis, research | GPT-5.5 (`reasoning.effort: "high"`/`"xhigh"`) |
-| Frontier capability | GPT-5.6 Sol |
-| Balanced capability/cost | GPT-5.6 Terra |
-| High-volume, cost-sensitive | GPT-5.6 Luna |
-| Multi-step reasoning | GPT-5.6 Sol / GPT-5.5 |
-| Coding with edge cases | GPT-5.6 Sol |
-| Real-time chat, simple queries | GPT-5.6 Luna / GPT-5.3 Instant |
+| Tier | ID | Released | $ in / cached / out per 1M | Positioning |
+|------|----|----------|----------------------------|-------------|
+| Astra | `gpt-6-astra` | Sep 3 2026 | $10 / $1.00 / $50 | Hardest end-to-end work: ambiguous problems, deep analysis, ambitious deliverables |
+| Sol | `gpt-6-sol` | Sep 22 2026 | $2 / $0.20 / $10 | Everyday driver: writing, coding, work that needs judgment |
+| Luna | `gpt-6-luna` | Sep 22 2026 | $0.10 / $0.01 / $0.50 | Scoped, high-volume tasks: triage, frequent automations |
 
-### GPT-5.6 Sol / Terra / Luna (GA, July 9 2026)
+All three: 1,050,000-token context, 128,000 max output. Choose the tier by representative evals rather than routing everything to the most capable model, and preserve the workload role when migrating.
 
-All three share a 1,050,000-token context (max input 922,000) and 128,000 max output; they differ by capability/price tier, not context size. GA on Responses, Chat Completions, and Batch APIs; multi-agent orchestration is beta (Responses API only).
+**API rules**:
+- Astra: `reasoning.effort: "none"` returns HTTP 400 (migrate `none` to `low`); function calling requires the Responses API.
+- Sol/Luna: function calling on Chat Completions only with `reasoning_effort: "none"`; use Responses for reasoning with tools.
+- Remove `temperature`, `top_p`, `top_logprobs`, `logprobs` when effort is not `none` (error vs ignored: Verify).
+- New: async tool calling (`async: true`, result returned later by `call_id`), mid-turn steering over WebSocket, `configuration_update`, misalignment monitoring (can return `403 misalignment_policy_violation`: stop dispatching, do not auto-retry).
+- There is no separate Sol/Luna prompting guide; the official guidance addresses behavior observed on Astra. Guidance that helps Sol/Luna may over-constrain Astra, so evaluate per model and audit repo skills and AGENTS.md.
 
-**`reasoning.effort`**: `none` | `low` | `medium` (default) | `high` | `xhigh` | `max` — the `max` tier is new in this release. Persisted reasoning across turns is supported.
+**Five Astra behaviors and remedies**:
+
+| Behavior | Remedy |
+|----------|--------|
+| **Initiative**: asks non-blocking questions, stops when it should assume and persist (any effort level) | Define completion before starting. "Persist until the user's intended goal is complete." Ask for approval only after preparing a concrete, reviewable result |
+| **Instruction following**: more sensitive to skills and AGENTS.md; unclear or conflicting guidance makes it pause | Audit skills and AGENTS.md. State: "The user's instructions take precedence over guidelines provided in a skill." |
+| **Writing style**: heavy Markdown, recurring phrases across sessions | Specify the style (plain paragraphs, lists only for parallel or sequential info). Blocklist: "delve", "foster", "leverage", "it's worth noting", "importantly", "genuinely", "Bottom Line:", "In short:", contrastive "X, not Y" framing |
+| **Delegation**: under-delegates | Say when and how much to delegate (e.g. "if it could save time or improve quality") |
+| **Testing**: over-tests small tasks | Calibrate: no tests for reversible, low-impact changes that mirror the implementation; broaden only when changes, failures or open concerns justify it |
+
+**Migration from GPT-5.5/5.6**: replace `prompt_cache_retention` with `prompt_cache_options.ttl: "30m"`; drop `none` on Astra; audit "ask first / wait for approval" language written for older, over-eager models -- Astra can take it too seriously and stall.
+
+### GPT-5.6 Sol / Terra / Luna (prior generation, still live)
+
+`gpt-5.6` aliases to `gpt-5.6-sol`. All three share a 1,050,000-token context and 128,000 max output; they differ by capability/price tier. Multi-agent orchestration is beta (Responses API only). Effort: `none` to `max` (default `medium`); `reasoning.context` defaults to `all_turns`.
 
 **Official prompting guidance**:
 - **Lean prompts win.** OpenAI reports 10-15% eval score gains with 41-66% fewer tokens.
 - **State each instruction once.** Repetition degrades performance.
-- **Don't over-repeat caution phrases** ("ask first", "wait for approval") — this triggers unnecessary approval prompts.
-- **More concise by default than GPT-5.5.** A blunt "be concise" instruction can over-truncate; use `text.verbosity` instead.
+- **Don't over-repeat caution phrases** ("ask first", "wait for approval") -- this triggers unnecessary approval prompts.
+- **More concise by default than GPT-5.5.** Use `text.verbosity`, not a blunt "be concise".
+- **Keep concrete validation steps** (tests, type check, build); OpenAI recommends them on 5.6.
 
-**Cost gotchas**: input above 272K tokens bills **2x input / 1.5x output for the entire request**, not just the overage. Cache writes bill at 1.25x standard input rate.
+**Billing (GPT-6 and GPT-5.6)**: input above 272K tokens bills **2x input and cache rates and 1.5x output for the entire request**, not just the overage. Cache writes bill at 1.25x input (GPT-5.5: no write charge); reads 0.1x. Prices per specs: GPT-5.6 Sol $4 / $0.40 / $20 (promo from Aug 21 2026, "at least through Nov 21 2026"), Terra $2 / $0.20 / $12, Luna $0.20 / $0.02 / $1.20.
+
+### GPT-5.5 (Prior Generation)
+
+GPT-5.5 (`gpt-5.5`, $5 / $0.50 / $30) and `gpt-5.5-pro` remain live in the API. GPT-5.5 leaves ChatGPT and Codex on Oct 14 2026 (API unaffected). GPT-5.3 Instant (`gpt-5.3-chat-latest`) was shut down Aug 10 2026; "Instant" is now a ChatGPT thinking level, and the API alias is the rolling `chat-latest` (not for production).
+
+### Model Selection
+
+| Scenario | Use |
+|----------|-----|
+| Hardest reasoning, ambiguous or ambitious work | GPT-6 Astra |
+| Everyday coding, writing, judgment work | GPT-6 Sol |
+| High-volume, cost-sensitive, scoped tasks | GPT-6 Luna |
+| Existing GPT-5.6 integrations | Keep on GPT-5.6 until evals justify moving; mid-tier is Terra (no GPT-6 successor) |
+| Previous-generation frontier | GPT-5.5 (`reasoning.effort: "high"`/`"xhigh"`) |
 
 ---
 
 ## 8. Common Pitfalls
 
 ### Over-Prompting
-Adding more instructions makes GPT-5 output worse. Resist the urge to add "be thorough", "consider all angles", "double-check your work". The model does this naturally.
+Adding more instructions makes GPT output worse. Resist the urge to add "be thorough", "consider all angles". The model does this naturally. On GPT-6 Astra also drop "double-check your work" (AP-16); on GPT-5.6 keep concrete validation steps.
+
+### Thoroughness vs Persistence
+These are different. Thoroughness phrasing ("be thorough") is still unneeded -- remove it; "double-check your work" is droppable on GPT-6 Astra only (AP-16), while GPT-5.6 keeps concrete validation steps. Persistence and completion phrasing ("persist until the goal is complete", a definition of done) is officially recommended for GPT-6 Astra, which stops early and asks for approval at any effort level.
+
+### Over-Repeated Caution Phrases
+Repeating "ask first", "do not mutate" or "wait for approval" causes unnecessary approval requests; carried over from older models, it makes Astra stall. Say it once, or not at all.
+
+### Absolute-Rule Overuse
+ALWAYS/NEVER on judgment calls creates instability. Reserve them for true invariants.
+
+### Raising Effort Instead of Fixing the Prompt
+Check for a missing success criterion, dependency rule, routing rule or verification loop before raising effort.
 
 ### Verbose System Prompts
 Long system prompts dilute important instructions. Keep system messages focused on role, constraints, and format.
 
 ### Ignoring Reasoning Effort
-Defaulting to `medium` for everything wastes latency on simple tasks and misses depth on complex ones. Match `reasoning.effort` to task.
+Defaulting to `medium` for everything wastes latency on simple tasks and misses depth on complex ones. Match `reasoning.effort` to task, per model.
 
 ### Missing Persistence Reminders
-At `none`, `low`, and `medium` reasoning effort, agentic tasks may terminate prematurely. Add explicit continuation instructions, or use the `<tool_persistence_rules>` contract tag (Section 10).
+On GPT-5.x at `none`, `low`, and `medium` reasoning effort, agentic tasks may terminate prematurely (on Astra at any effort). Add explicit continuation instructions, or use the `<tool_persistence_rules>` contract tag (Section 10).
 
 ---
 
-## 9. GPT-5 Cheat Sheet
+## 9. GPT Cheat Sheet (GPT-5.x and GPT-6)
 
 ```
 DO:
@@ -274,36 +326,40 @@ DO:
 - Use text.verbosity: "low" | "medium" | "high" to control output length
 - Prefer the Responses API (current surface) over legacy Chat Completions params
 - Use XML or Markdown structure (XML now recommended, not Markdown-only)
-- Crisp tool descriptions (1-2 sentences)
+- Concise tool descriptions: what, when to use, returns, errors
 - Use JSON mode for structured output
 - System messages for role and constraints
 - Specify language and success criteria for code
-- Add persistence reminders, or `<tool_persistence_rules>`, for agentic tasks
+- Add persistence reminders, or `<tool_persistence_rules>`, for agentic tasks; for Astra add an initiative line and a completion definition
+- Never send `reasoning.effort: none` to GPT-6 Astra; never use `reasoning_profile` (does not exist)
+- Remove sampling params (`temperature`, `top_p`) on GPT-6
 - Use the agentic contract tag set (Section 10) for tool-heavy tasks
 
 DON'T:
 - Over-prompt (reduces quality)
-- Write verbose tool descriptions
+- Write verbose or redundant tool descriptions
+- Repeat instructions or caution phrases for emphasis
+- Reuse an effort value across models (enum is per-model)
 - Force reasoning on simple tasks
 - Use elaborate frameworks or CoT
 - Add unnecessary "be thorough" instructions
 
 TEMPLATE:
-## Task
-[concise instruction]
-
-## Input
-[data]
-
-## Output Format
-[JSON schema or format spec]
+## Role
+## Personality
+## Goal
+## Success criteria
+## Constraints
+## Tools
+## Output
+## Stop rules
 ```
 
 ---
 
-## 10. Agentic Contract Tags (GPT-5.5)
+## 10. Agentic Contract Tags (GPT-5.4 Guide Set)
 
-For agentic and tool-heavy prompts, current GPT-5.5 guidance replaces the older ad-hoc `<persistence>` / `<dig_deeper_nudge>` style reminders with a structured set of contract tags. Use whichever are relevant to the task -- not every prompt needs all of them.
+For agentic and tool-heavy prompts, OpenAI's GPT-5.4 guide replaced the older ad-hoc `<persistence>` / `<dig_deeper_nudge>` style reminders with a structured set of contract tags. The 5.5, 5.6 and GPT-6 guides use plain labeled sections instead (Section 3), so treat these tags as a proven convention rather than the current official set; on 5.6+, `<tool_orchestration>` routes Programmatic Tool Calling. Use whichever are relevant to the task -- not every prompt needs all of them.
 
 | Tag | Purpose |
 |-----|---------|
@@ -326,7 +382,7 @@ Inside `<verification_loop>` or `<completeness_contract>`, state an explicit sto
 Use the minimum evidence sufficient to answer, cite it, then stop.
 ```
 
-This guards against both premature stopping (the old light/low-effort problem) and unnecessary over-searching.
+This guards against both premature stopping (the low-effort problem) and unnecessary over-searching.
 
 ### Retrieval Budget Guidance
 
@@ -373,3 +429,4 @@ Cite every factual claim with a source. No uncited claims.
 - [OpenAI GPT-5 Platform Documentation](https://platform.openai.com/docs)
 - [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)
 - [GPT-5 Best Practices](https://platform.openai.com/docs/guides/gpt-best-practices)
+- [OpenAI Latest Model Guide (GPT-6)](https://developers.openai.com/api/docs/guides/latest-model)

@@ -76,7 +76,7 @@ These are **API-breaking**, not stylistic. Getting one wrong returns an error or
 
 Two facts that are widely misstated — carry the scoped version:
 
-- **Effort does not transfer between models.** Anthropic publishes a few pairwise mappings (`specs-current.md`); each holds only for its model pair. There is no family-wide "low/medium beats prior xhigh" rule, and default effort differs even within one generation — set it explicitly and sweep per model on your own evals.
+- **Effort does not transfer between models.** Anthropic publishes a few pairwise mappings (`specs-current.md`); each holds only for its model pair. There is no family-wide "low/medium beats prior xhigh" rule, and default effort differs even within one generation (Opus 5.5 ships a different default from its siblings) — set it explicitly and sweep per model on your own evals.
 - **Gemini sampling params are omitted, not tuned to 1.0.** They are formally deprecated. Remove the keys.
 
 ## Step 4 — Scan (AP-1 … AP-19)

@@ -95,7 +95,7 @@ Observed on Astra; evaluate on GPT-6 Sol/Luna (no separate Sol/Luna guide exists
 | Instruction following: sensitive to skills and AGENTS.md | Audit them. State "The user's instructions take precedence over guidelines provided in a skill." |
 | Writing style: heavy Markdown, recurring phrases | Specify style; the anti-slop phrase list lives in `tasks-content.md`. |
 | Delegation: under-delegates | Say when and how much to delegate. |
-| Testing: over-tests | "No tests for reversible, low-impact changes that mirror the implementation." |
+| Testing: over-tests | Calibrate testing down — official line in `tasks-code.md`. |
 
 Sampling: remove `temperature`, `top_p`, `top_logprobs`, `logprobs` on GPT-6 when effort is not `none` (whether they error or are ignored: Verify). `reasoning.effort: none` returns 400 on Astra.
 

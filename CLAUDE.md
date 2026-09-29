@@ -4,23 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **Prompt Engineering Knowledge Base v6.0** (July 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (Claude Fable 5/Opus 5/Sonnet 5, GPT-5.5, Gemini 3.5, and 10+ other frontier models).
+This is a **Prompt Engineering Knowledge Base v6.1** (September 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (Claude Fable 5.1/Opus 5.5/Sonnet 5.5, GPT-6 Astra/Sol/Luna, Gemini 3.8 Flash, and 10+ other frontier models).
 
 ## Architecture
 
-The repository follows a modular documentation structure (11 files, ~4,250 lines) with a main entry point and supporting modules:
+The repository follows a modular documentation structure (11 files, ~6,200 lines) with a main entry point and supporting modules:
 
 ```
 00-prompt-engineer.md           # Main entry point (APEX persona, compressed cheat sheets)
                                 # Auto-loads 01, 02; references 03-10 on demand
 01-foundations_v5               # Context engineering, thinking modes, hallucination mgmt, caching
 02-techniques-patterns_v5       # All techniques + ALL anti-patterns (canonical home)
-03-model-catalog_v5             # NEW: All model specs, pricing, selection guide (single source)
+03-model-catalog_v5             # All model specs, pricing, selection guide (single source)
 04-evaluation-optimization_v5   # Evaluation, regression testing, CI/CD pipelines, LLM-as-judge
 05-domain-applications_v5       # Domain-specific patterns (content, analysis, code, data)
 06-claude-practices_v5          # MERGED: Claude Research + Best Practices + agentic coding
-07-gemini-practices_v5          # MERGED: Deep Research + Gemini 3.1 Pro guidance
-08-gpt5-practices_v5            # NEW: Dedicated GPT-5 module (reasoning profiles, tools)
+07-gemini-practices_v5          # MERGED: Deep Research + Gemini 3.x (3.8 Flash) guidance
+08-gpt5-practices_v5            # GPT-5.x + GPT-6 module (reasoning effort, tiers, tools)
 09-safety-guardrails_v5         # Injection defense, jailbreak resistance, multimodal injection
 10-agentic-patterns_v5          # Tool orchestration, sub-agents, IDE patterns
 ```
@@ -29,32 +29,34 @@ The repository follows a modular documentation structure (11 files, ~4,250 lines
 
 - **Context engineering > prompt engineering** - Focus on WHAT information you provide, not clever phrasing
 - **Simpler prompts work BETTER** - Reasoning models have native CoT; explicit step-by-step REDUCES performance
-- **Effort parameter** is primary cost lever - low/medium on current models often exceed prior xhigh
-- **Adaptive thinking** defaults differ per model (Fable 5 always-on, Opus 5/Sonnet 5 on, Opus 4.8 off)
+- **Effort parameter** is primary cost lever - defaults differ per model (Opus 5.5 `medium`, most others `high`); mappings are pairwise only (e.g. Opus 5.5 `medium` ≥ Opus 5 `high`) — never port a level across models
+- **Adaptive thinking** defaults differ per model (Fable 5/5.1 and Opus 5.5 always-on; Opus 5, Sonnet 5/5.5 on; Opus 4.8 off)
 - **Agent coordination is table stakes** - Orchestrator+executor is dominant pattern
 - **Compaction is a safety surface** - Silently evicts constraints; re-pin after every compaction
-- **Sampling params are dying** - temp/top_p/top_k → 400 on Claude current-gen
+- **Sampling params are dying** - temp/top_p/top_k → 400 on Claude current-gen; formally deprecated on Gemini (ignored on 3.6+, 400 on future generations)
 
 ## Model-Specific Key Points
 
 | Model | Critical Setting | Key Technique |
 |-------|-----------------|---------------|
-| **Claude Fable 5** | Thinking always-on, effort | Brief instructions > enumeration, memory file, send-to-user tool |
-| **Claude Opus 5** | Thinking on (off ≤high), effort | Remove *redundant* verification instructions, constrain scope, cap subagents |
-| **Claude Sonnet 5** | Thinking on, effort | Literal instruction following, state scope explicitly |
-| **Gemini 3.x** | OMIT temp/top_p/top_k | Direct instructions, constraints in SYSTEM INSTRUCTION at top, question last |
+| **Claude Opus 5.5** | Thinking always-on (`disabled` → 400), default effort `medium` | Default starting model; shortest outcome + scope prompt; set effort explicitly |
+| **Claude Fable 5.1** | Thinking always-on, effort | Escalation model; brief instructions > enumeration; ask for progress updates; no forced `tool_choice` |
+| **Claude Sonnet 5.5** | Thinking on, lowest `between_tools` (≤`high`) | Literal instruction following, state scope, add "stop when done" line |
+| **Claude 5.1/5.5 (all)** | No prefill, sampling, `budget_tokens`, forced `tool_choice` | Keep history append-only; pass thinking blocks back unchanged |
+| **Gemini 3.x** (3.8 Flash top) | OMIT temp/top_p/top_k; no prefill (3.6+) | Direct instructions; persona + output format at top, question last |
+| **GPT-6** (Astra › Sol › Luna) | `reasoning.effort` (enum is PER-MODEL; Astra rejects `none`) | Outcome-first prompts; Astra: define completion, calibrate testing |
 | **GPT-5.x** | `reasoning.effort` (enum is PER-MODEL) | Outcome-first minimal prompts, XML tags recommended |
 
 ## Anti-Patterns to Avoid
 
 - Explicit CoT ("Let's think step by step") with reasoning models **when thinking is enabled** (still valid as a fallback when thinking is off)
 - "Think harder"/"keep going" - overthinking corrupts correct answers
-- Verification instructions for Opus 5/Fable 5 (self-verify; cost, no gain)
-- Telling Fable 5 to echo reasoning (triggers reasoning_extraction refusal)
+- Verification instructions for Opus 5/GPT-6 Astra (self-verify; cost, no gain) — not Fable 5/5.1, whose guidance asks for periodic self-checks on long runs
+- Asking Fable 5/5.1, Opus 5.5 or Sonnet 5.5 to echo reasoning (triggers a billed reasoning_extraction refusal)
 - Excessive few-shot examples (>5 = warning; Anthropic recommends 3-5 diverse examples in `<example>` tags) or examples that demo reasoning rather than output format
 - Conversational padding ("please", "kindly") - especially harmful for Gemini
-- Over-prompting GPT-5/Fable 5 (less is more)
-- Setting temperature/top_p/top_k on Claude current-gen or Gemini (→ 400 or looping)
+- Over-prompting GPT-5.x/GPT-6/Fable 5.x (less is more)
+- Setting temperature/top_p/top_k on Claude current-gen (→ 400) or Gemini (ignored on 3.6+, looping on older 3.x)
 - Offset-from-end references ("second-to-last") - Position Curse
 
 ## File Relationships

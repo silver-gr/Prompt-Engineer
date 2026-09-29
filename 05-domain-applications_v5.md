@@ -1,4 +1,4 @@
-# Domain-Specific Applications (2026 Edition)
+# Domain-Specific Applications (September 2026)
 
 This module documents specialized implementation patterns for prompt engineering across different domains and use cases.
 
@@ -29,7 +29,7 @@ Generate a {content_type} about {domain}.
 {specify_output_structure(content_type)}
 </output_format>
 """
-    return model.generate(prompt, thinking_mode='auto')
+    return call_model(prompt, effort="medium")  # pseudocode helper; real config: output_config.effort (Claude) · reasoning.effort (GPT) · thinking_level (Gemini)
 ```
 
 ### Example
@@ -57,6 +57,20 @@ Return markdown with proper structure.
 - Clear specifications (length, style, structure)
 - Explicit output format
 - DON'T prescribe writing process ("first brainstorm, then outline, then...")
+
+### Model-Specific Writing Fixes
+
+Output-style defaults, fixed in the prompt (settings stay in the model modules).
+
+| Model | Symptom | Fix |
+|---|---|---|
+| Fable 5.1 | Dense, mannered prose | Define "mannered prose" (prefer the user message), or just `Please remove all mannered prose.` |
+| Fable 5.1 | Too little formatting | Delete anti-formatting rules; add a when-to-use-lists rule instead |
+| Fable 5.1 | Unmarked quotations | One complete `<example>` (request, response, rationale) showing quotes marked |
+| GPT-6 Astra | Heavy Markdown, recurring phrases | Specify the style (plain paragraphs, lists only for parallel or sequential items) and add the blocklist below |
+| GPT-5.6 | Too brief under a broad "be concise" | State what a short answer must keep; define tone by concrete writing choices, not labels like "friendly" |
+
+Official GPT-6 anti-slop blocklist: "delve", "foster", "leverage", "it's worth noting", "importantly", "genuinely", "Bottom Line:", "In short:", and contrastive "X, not Y" framing. Use it as an output-style fix, not a prompt anti-pattern.
 
 ---
 
@@ -115,6 +129,7 @@ Return JSON: {trends, analysis, forecast, confidence}
 - Clear analytical framework in context
 - Well-structured input data
 - Explicit output format with confidence scores
+- Opus 5.5 chat analysis: optionally add `Once you have answered something, treat that answer as done. On later turns, focus your thinking on what the user is asking now, and don't go back over an earlier answer unless the user asks about it or points out a problem with it.` Skip it for long analyses and agentic work -- it can suppress self-correction.
 
 ---
 
@@ -163,14 +178,29 @@ Include:
 
 Return as markdown code block.
 """
-    return model.generate(prompt, temperature=0.2)  # Gemini: omit, leave at 1.0
+    return model.generate(prompt)  # no temperature/top_p/top_k: 400 on current Claude, omitted on Gemini
 ```
 
 ### Best Practices
 - Don't prescribe code review steps ("first check syntax, then review logic...")
 - Specify language, conventions, and constraints
-- Lower temperature for code (Gemini: omit the parameter -- 1.0 default is recommended, sub-1.0 may cause looping)
+- Don't set sampling parameters: non-default `temperature`/`top_p`/`top_k` return 400 on current Claude; on Gemini omit the keys entirely (deprecated Jul 21 2026; sub-default values can still loop on older Gemini models)
 - Let models do comprehensive analysis naturally
+- Review prompts tuned for earlier models show lower recall on current ones: a filter such as "only report high-severity" is followed literally and drops real findings. Ask for full coverage with confidence and severity per finding, and filter in a separate pass
+
+### Model-Specific Code Levers
+
+Behavior fixes in the prompt (settings stay in the model modules).
+
+| Model | Failure | Add |
+|---|---|---|
+| Sonnet 5.5 | Stops to check in; adds unrequested files | `Keep working until everything the user asked for is done, and only stop to ask when you can't go on without the user or before a risky step.` Then: `When the work the user asked for is done and checked, stop and report. Don't add features, tests, files, docs or refactors that weren't asked for. If you think one would help, mention it at the end instead of doing it.` The first line raises cost at low/medium effort. |
+| Fable 5.1 | Extra fixes, extra tests, whole-file rewrites | Extras-only paragraph: report nearby problems as follow-ups rather than fixing them; commit tests only where the task asks, roughly one focused test per stated behavior; implement every requested behavior completely. Edit line: `when it will not affect the end result, try to surgically edit a file rather than rewrite the entire thing.` |
+| Opus 5.5 (frontend) | Default look | Name the specific patterns to avoid (e.g. cream background, italic accent words, "01/02/03" labels, monospace labels, pill buttons) and iterate the list. "Avoid a generic AI look" only swaps one default for another. |
+| GPT-6 Astra | Over-testing; heavy reliance on repo guidance | `Do not write tests for reversible, low-impact changes that mirror the implementation.` Broaden testing only when new changes, failures, or unresolved concerns justify it. Astra is more sensitive to AGENTS.md and skills: use contextual doc pointers, not "read X, Y, Z before every edit", and grant explicit permission for safe local test loops. |
+| GPT-5.6 | Skipped verification | Keep explicit steps: targeted tests, type check, build, smoke test. |
+
+Sonnet 5.5 at low effort: add a real-check paragraph -- run a real check that exercises the change before reporting done; install declared deps with the project's own package manager, never sudo; if no real check can run, say which one was not run and why.
 
 ---
 
@@ -221,6 +251,9 @@ Return transformed data.
 - Provide explicit schemas with types
 - Validate output programmatically
 - Don't over-instruct extraction process
+- Give absence its own representation (`null`, `"unknown"`, or an `unresolved` list) so the model doesn't invent values
+- JSON on multi-step reasoning (Sonnet 5.5): use structured outputs plus adaptive thinking, and end the system prompt with "Think the problem through before you answer." (or use `xhigh` alone; not `between_tools`). Treat `stop_reason:"max_tokens"` as failure even when the JSON is valid. Without structured outputs, parse the **last** JSON value, not first `{` to last `}`
+- Batch: keep the schema block byte-identical across calls so the shared prefix stays cacheable
 
 ---
 
@@ -269,6 +302,7 @@ Return JSON:
 - Don't over-instruct cross-modal reasoning
 - Clear context per modality
 - Let models integrate modalities naturally
+- Dense visual inputs (charts, drawings, scans): crop/zoom/code tools beat raising effort on Sonnet 5.5 and Fable 5.1; Opus 5.5 needs less scaffolding, so re-test old vision scaffolding before keeping it
 
 ---
 
@@ -307,9 +341,12 @@ Return JSON:
 ### Best Practices
 - Structure retrieved context clearly with document IDs
 - Use semantic chunking for retrieval
-- Leverage large context windows (1M-2M) for more documents
+- Leverage large context windows (1M-class; 10M on Llama 4 Scout) for more documents
 - Require citation to specific sources
 - Enforce "not found" responses for missing information
+- Freshness (Sonnet 5.5): `Use the search tool to check specifics that may have changed since your training, such as what is allowed, required or charged, even when you feel confident. For researched work such as a report or a comparison, gather current sources rather than writing from your training knowledge.`
+- Low-effort memory answers on Fable 5.1: recognizing a name is not knowing its current state -- tell it to search the name as written, or raise effort for that turn
+- Deep-search prompts: state an explicit completion criterion (what counts as done) up front
 
 ---
 
@@ -333,7 +370,7 @@ Focus on:
 
 Return structured analysis with citations to specific sections.
 """
-    return model.generate(prompt, thinking_mode='deep')
+    return call_model(prompt, effort="high")  # pseudocode helper; real config: output_config.effort (Claude) · reasoning.effort (GPT) · thinking_level (Gemini)
 ```
 
 ### Scientific/Medical Analysis
@@ -355,7 +392,7 @@ Evaluate:
 
 Provide evidence-based analysis with specific citations.
 """
-    return model.generate(prompt, thinking_mode='deep')
+    return call_model(prompt, effort="high")  # pseudocode helper; real config: output_config.effort (Claude) · reasoning.effort (GPT) · thinking_level (Gemini)
 ```
 
 ### Financial Analysis
@@ -377,7 +414,7 @@ Provide:
 
 Return structured JSON with numerical precision.
 """
-    return model.generate(prompt, thinking_mode='deep')
+    return call_model(prompt, effort="high")  # pseudocode helper; real config: output_config.effort (Claude) · reasoning.effort (GPT) · thinking_level (Gemini)
 ```
 
 ---
@@ -465,12 +502,12 @@ Return as JSON array of test cases.
 ## 10. Performance Optimization by Application
 
 ### High-Stakes Analysis (Legal, Medical, Financial)
-- Claude: `output_config.effort: "xhigh"` or `"max"` · GPT-5.x: `reasoning.effort: "high"` (`"xhigh"` on 5.2+, `"max"` on 5.6 only -- GPT-5 base tops out at `"high"`) · Gemini: `thinking_level: "high"`
+- Claude: `output_config.effort: "xhigh"` or `"max"` · GPT-5.x / GPT-6: `reasoning.effort: "high"` (`"xhigh"` on 5.2+ (not re-verified this cycle — Verify), `"max"` on 5.6+ -- GPT-5 base tops out at `"high"`) · Gemini: `thinking_level: "high"`
 - Structured output with confidence scores
-- Note: on Opus 5 / Fable 5, skip explicit verification requests — they self-verify
+- Note: on Opus 5 and GPT-6 Astra, skip explicit verification requests (AP-16) — keep the requirement as an output section (Sources, Limits, confidence)
 
 ### Real-Time Applications (Chatbots, Interactive)
-- Claude: `output_config.effort: "low"` · GPT-5.x: `reasoning.effort: "low"` (`"none"` on 5.2+; GPT-5 base uses `"minimal"`) · Gemini: `thinking_level: "minimal"` on 3.5 Flash, `"low"` on 3.1 Pro
+- Claude: `output_config.effort: "low"` · GPT-5.x / GPT-6: `reasoning.effort: "low"` (`"none"` on 5.2+ (not re-verified this cycle — Verify) except GPT-6 Astra, where `none` returns 400; GPT-5 base uses `"minimal"`) · Gemini: `thinking_level: "low"` on 3.8 Flash (`"minimal"` errors there; valid on 3.6 Flash, 3.5 Flash and Flash-Lite)
 - Optimize for latency
 - Cache system prompts
 
@@ -479,10 +516,11 @@ Return as JSON array of test cases.
 - Parallel processing
 - Validate outputs programmatically
 - Use batch API for 50% cost savings
+- Gemini Flash-Lite extraction: keep the default `minimal` thinking for throughput; raise it only for subagents that use tools
 
 ### Creative Applications (Content, Ideation)
-- Higher temperature (except Gemini: always 1.0)
-- Multiple generations with selection
+- Multiple generations for variety (no temperature on current Claude or Gemini -- steer variety through prompt text)
+- Generate N independently and select; don't ask for N variants in one response
 - Less strict output format
 
 ---
@@ -507,8 +545,8 @@ All anti-patterns reference 02-techniques-patterns_v5.md. Domain-specific exampl
 
 ## References
 
-- OpenAI GPT-5 Application Patterns (2025-2026)
-- Anthropic Claude 4.x Use Cases (2025-2026)
+- OpenAI GPT-5 / GPT-6 Application Patterns (2025-2026)
+- Anthropic Claude 5.x Use Cases (2026)
 - Google Gemini 3.x Domain Applications (2025-2026)
 - Yao, S., et al. (2022). "ReAct: Synergizing Reasoning and Acting." [arXiv:2210.03629](https://arxiv.org/abs/2210.03629)
 - Liu, P., et al. (2023). "Pre-train, Prompt, and Predict." [ACM Computing Surveys](https://dl.acm.org/doi/abs/10.1145/3560815)

@@ -119,8 +119,8 @@ Capability is commoditizing — the open-weights leader scores 46 vs the closed 
 
 | Group | Status |
 |---|---|
-| Claude retired / imminent | Opus 4.1 **retired Aug 5 2026** (errors). Sonnet 4.5 `claude-sonnet-4-5-20250929` retires ≥ Sep 29 2026 (imminent). Mythos Preview `claude-mythos-preview` deprecated Jun 9 2026, retirement TBA. Retired except on select clouds: Opus 4, Sonnet 4, Haiku 3.5 |
-| Claude active (older) | Opus 4.5 `claude-opus-4-5-20251101` (last Opus with manual budgets) ≥ Nov 24 2026; Opus 4.7 ≥ Apr 16 2027 (fast mode removed Jul 24 2026); Opus 4.6 ≥ Feb 5 2027; Sonnet 4.6 ≥ Feb 17 2027 |
+| Claude retired / imminent | Opus 4.1 **retired Aug 5 2026** (errors). Sonnet 4.5 `claude-sonnet-4-5-20250929` (200K context) retires ≥ Sep 29 2026 (imminent). Mythos Preview `claude-mythos-preview` deprecated Jun 9 2026, retirement TBA. Retired except on select clouds: Opus 4, Sonnet 4, Haiku 3.5 |
+| Claude active (older) | Opus 4.5 `claude-opus-4-5-20251101` (last Opus with manual budgets) ≥ Nov 24 2026; Opus 4.7 ≥ Apr 16 2027 (fast mode removed Jul 24 2026); Opus 4.6 ≥ Feb 5 2027 (fast mode disabled Jun 29 2026); Sonnet 4.6 ≥ Feb 17 2027 (superseded by Sonnet 5; old tokenizer) |
 | GPT retired | GPT-5.3 Instant `gpt-5.3-chat-latest` **Aug 10 2026** ("Instant" is now a ChatGPT thinking level on GPT-5.6 Sol/Luna). `gpt-5-codex`, `gpt-5.1-codex*`, `gpt-5.2-codex`, `gpt-5-chat-latest`, `gpt-5.1-chat-latest`, `computer-use-preview` Jul 23 2026; `gpt-5.2-chat-latest` Aug 10 2026 → `gpt-5.6-sol`/`-terra` |
 | GPT retiring | `gpt-5-2025-08-07`, mini, nano, `gpt-5-pro`, `o3`, `o3-pro` Dec 11 2026 → `gpt-5.6-*` (Pro → `gpt-5.6-sol` + `reasoning.mode:"pro"`). GPT-5.5 leaves ChatGPT / Codex Oct 14 2026 (API unaffected). Specific GPT-4 / 4o snapshots Oct 23 2026 (`gpt-4o`, `gpt-4o-mini`, `gpt-4.1*` still priced) |
 | OpenAI platform | Assistants API shut down Aug 26 2026 → Responses + Conversations. `v1/prompts` Nov 30 2026. Evals platform read-only Oct 31 2026 |

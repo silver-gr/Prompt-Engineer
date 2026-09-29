@@ -2,6 +2,31 @@
 
 All notable changes to the Prompt Engineering Knowledge Base are documented in this file.
 
+## [6.1.1] - 2026-09-29 — Knowledge-base sync
+
+The 11 KB files (`00-prompt-engineer.md`, `01`–`10-*_v5.md`) brought in line with the
+refreshed skill (6.1.0). Every number was checked against the skill's `specs-current.md` /
+`specs-other.md` by an independent verifier (PASS after one fix round). Plan:
+`-HQ/plans/2026-09-29-pce-refresh-v6/60-kb-update-plan.md`.
+
+- **Models:** Claude Fable 5.1 / Opus 5.5 / Sonnet 5.5 current (Opus 5.5 = default start);
+  Fable 5 / Opus 5 / Sonnet 5 / Opus 4.8 relabeled legacy. GPT-6 tiers with the Sol naming
+  note. Gemini 3.6–3.8 Flash. Grok 4.7, Muse, Mistral Medium 3.5, DeepSeek V4.1, Qwen 3.8,
+  GLM-5.3, Mercury 2.5, MiMo. Full catalog (03) and deprecation tables refreshed.
+- **New sections:** Claude 5 → 5.5/5.1 migration and refusals/fallbacks/billing (06); GPT-6
+  tiers, Astra behaviors, new template and config (08); egress and memory-file controls,
+  compaction-loss evidence (09); MCP note, POLICY FACTS handoff field, early-stopping caps (10).
+- **Anti-patterns (02):** every AP now states Applies-to and severity, matching SKILL.md.
+  Few-shot heuristics in 01/04 are now family-aware (AP-3).
+- **Removed errors:** invented `thinking_mode` pseudo-parameter (05); `temperature` in
+  code samples (02, 04); "reasoning profiles" (00); prefill-400 scope "4.6+" (03, 06);
+  Sonnet 5.5 "thinking off" (10); "Mythos has no classifiers" (09); Gemini "constraints last"
+  as a hard rule (07).
+- **Marked "(not re-verified)":** GPT-5.2 / 5.1 / 5 effort enums, Gemini Deep Research
+  figures, Claude research-tool table.
+- Skill follow-ups: duplicate snippets replaced by pointers; legacy Opus 4.6 / Sonnet 4.6 /
+  Sonnet 4.5 notes restored in `specs-current.md`. `CLAUDE.md` model table updated.
+
 ## [6.1.0] - 2026-09-29 — Skill refresh
 
 Research-driven refresh of the `prompt-context-engineer` v6 skill (skill only; the

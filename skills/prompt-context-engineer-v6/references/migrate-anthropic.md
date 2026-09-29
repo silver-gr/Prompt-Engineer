@@ -18,17 +18,7 @@ Haiku 4.5 is exempt from all three tables.
 
 ### (b) What to add
 
-| Add | To | Because |
-|---|---|---|
-| Conciseness instruction | Opus 5 | default responses run longer than prior Opus |
-| Scope fence | Opus 5 | expands narrow tasks with unrequested steps |
-| Subagent cap | Opus 5 | delegates more readily (Fable 5 guidance is the opposite: use subagents freely, with explicit guidance on when) |
-| Explicit scope statement | Sonnet 5 | literal instruction following |
-| Tool-use nudge | Sonnet 5 with thinking off | less likely to reach for tools |
-| `"thinking":{"type":"adaptive"}` | Opus 4.8 | off unless set |
-| `max_tokens` headroom | Opus 5, Sonnet 5, Fable 5 | thinking is on by default and shares the ceiling with text |
-| "Report everything, filter separately" | review harnesses | literal following of severity filters lowers recall |
-| Memory file + progress grounding + autonomy reminder | Fable 5 | performance uplift; prevents fabricated status and early stopping |
+Apply each target model's **Add** column in `models-anthropic.md` (Opus 5: conciseness, scope fence, subagent cap; Sonnet 5: explicit scope, tool-use nudge with thinking off; Opus 4.8: adaptive thinking explicitly; Fable 5: memory file and progress grounding). Migration-only addition: `max_tokens` headroom on every thinking-on model — thinking shares the ceiling with text.
 
 ### (c) What became unsupported — and the fallback route
 

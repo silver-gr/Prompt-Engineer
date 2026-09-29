@@ -1,4 +1,4 @@
-# Agentic Patterns (2026 Edition)
+# Agentic Patterns (September 2026 Edition)
 
 This module is the **canonical home** for tool orchestration, sub-agent design, multi-context workflows, and IDE agent patterns. General agentic XML blocks for Claude are cross-referenced from 06-claude-practices_v5.md.
 
@@ -37,14 +37,16 @@ one costs you accuracy:**
 
 | Provider | Official guidance |
 |----------|-------------------|
-| OpenAI (GPT-5.x) | Keep descriptions **crisp**; verbose descriptions degrade quality |
+| OpenAI (GPT-5.x, GPT-6) | **Concise and precise**: what it does, **when to use it**, return fields, errors; expose only relevant tools. Verbose descriptions degrade quality |
 | Anthropic | Describe **what the tool does *and* when to use it**; "when to use" text is recommended for resolving tool-selection ambiguity |
 | Google (Gemini) | **No maximum**. Detailed descriptions with capabilities, usage conditions, and examples are recommended |
 
-The guidance below (brevity-first) reflects OpenAI's stance. On Claude and
-Gemini, prefer describing selection conditions explicitly.
+All three now want "when to use it" text. AP-7 targets **redundancy and irrelevant
+tools**, not detail: a detailed Claude or Gemini description is not a violation.
+Universal rules: one short line per parameter, enums where the value set is closed,
+edge-case handling in code rather than in the description.
 
-### Brevity-First Format (OpenAI): 1-2 Sentences
+### Concise Format (OpenAI-style): 1-2 Sentences
 
 ```json
 {
@@ -86,9 +88,19 @@ Gemini, prefer describing selection conditions explicitly.
 | Anti-Pattern | Problem | Fix |
 |--------------|---------|-----|
 | Multi-paragraph descriptions | Token waste, confuses models | 1-2 sentences |
-| Usage instructions in description | Redundant on GPT-5.x; **recommended by Anthropic and Google** | Remove for OpenAI; keep elsewhere |
+| Restating the same usage rule across tools | Redundant text and irrelevant tools dilute selection (AP-7) | State once; expose only relevant tools |
 | Edge case handling in description | Over-constrains | Handle in code |
-| "You should use this when..." | Redundant on GPT-5.x; **Anthropic recommends it** when tool choice is ambiguous | Judge per provider |
+| "Use this when..." | **Recommended by all three vendors** when tool choice is ambiguous | Keep it, concisely |
+
+**MCP spec `2026-07-28`**: tool schemas may use full JSON Schema 2020-12; return
+`tools/list` in a deterministic order to keep the prompt-cache prefix stable;
+Sampling, Roots, and Logging are deprecated -- call provider APIs directly.
+
+**Kimi K3 dynamic tool loading (optional)**: for large tool inventories, declare one
+`search_tools` function plus a few core tools and advertise searchable domain tags in
+the system prompt; force `tool_choice:"required"` on turn 1, then `auto`. Inject full
+definitions mid-conversation via a `system` message carrying a `tools` field and no
+`content`. Appending keeps the cached prefix; editing earlier declarations breaks it.
 
 ---
 
@@ -152,6 +164,15 @@ Synthesize findings into a comparison matrix.
 
 Models launch parallel search/research calls, then synthesize.
 
+**Fable 5.1 serial calls**: in coding and computer-use loops where the next calls are
+implied, Fable 5.1 tends to issue one tool call per turn (and searches less at `low`
+effort). Add a per-turn batching nudge as a turn-scoped system message from the harness
+rather than prose in the base prompt. Official wording: `First privately list what you need next; then request every item that doesn't depend on another's result in this one response.` Leave earlier copies in place byte-for-byte.
+
+**Gemini pre-tool text**: do not demand structured status text (XML/JSON) right before a
+tool call -- it can cause `Malformed_Function_Call`. Declare an `update()` tool
+(`previous_step`, `plan`, `next_step`) and tell the model to call it first, or use Markdown headers.
+
 ### Controlling Parallelization
 
 **Enforce sequential** (dependencies):
@@ -172,7 +193,7 @@ Gather this information (order doesn't matter):
 
 ### Concurrency Limits (Claude)
 
-Claude 5-family models emit multiple tool calls in one turn when beneficial. **Your application decides** whether to run them concurrently, sequentially, or mixed -- the model does not execute them. Concurrent execution is where the bottleneck risk lives. Effort level drives tool usage — `high`/`xhigh` show substantially more tool calls in agentic search and coding.
+Claude 5-family models (Fable 5.1, Opus 5.5, Sonnet 5.5 and legacy 5.x) emit multiple tool calls in one turn when beneficial. **Your application decides** whether to run them concurrently, sequentially, or mixed -- the model does not execute them. Concurrent execution is where the bottleneck risk lives. Effort level drives tool usage — `high`/`xhigh` show substantially more tool calls in agentic search and coding.
 
 ```xml
 <execution_constraints>
@@ -180,7 +201,7 @@ Maximum 3 concurrent tool calls. Wait for results before next batch.
 </execution_constraints>
 ```
 
-Sonnet 5 is more agentic than Sonnet 4.6 by default. With thinking disabled it is *less* likely to reach for tools — add an explicit nudge if you rely on tool calls with thinking off.
+Sonnet 5 / 5.5 is more agentic than Sonnet 4.6 by default. Legacy Sonnet 5 with thinking disabled is *less* likely to reach for tools -- add an explicit nudge if you rely on tool calls with thinking off. Sonnet 5.5 cannot run thinking off (`disabled` → 400; lowest is `between_tools`); it sometimes answers from training data instead of searching, so add a search-freshness line (e.g. "For anything that may have changed since your training data, search before answering"). Model settings (effort, thinking, concurrency) are configuration, not prompt text (AP-10).
 
 ---
 
@@ -321,8 +342,10 @@ def create_subagent_context(task, full_context):
 When delegating:
 1. TASK: Specific deliverable (1-2 sentences)
 2. CONTEXT: Only what they need
-3. CONSTRAINTS: Quality requirements, boundaries
-4. OUTPUT: Expected format
+3. POLICY FACTS: Facts that must survive the handoff, including exculpating
+   ones, and who may use them
+4. CONSTRAINTS: Quality requirements, boundaries
+5. OUTPUT: Expected format
 
 When receiving results:
 1. Validate completeness
@@ -331,9 +354,31 @@ When receiving results:
 </handoff_format>
 ```
 
+### Subagent Delegation Per Model
+
+- **Opus 5** delegates more readily than prior generations: cap it (see Section 10).
+- **Fable 5 / 5.1**: the opposite guidance -- use subagents frequently, with explicit guidance on when. For fan-out on a long run: `Delegate independent subtasks to subagents and keep working while they run. Intervene if a subagent goes off track or is missing relevant context.`
+- **GPT-6 Astra** under-delegates: say when and how much to delegate.
+- Uncapped delegation on an eager model is AP-13.
+
+### Early Stopping in Long Autonomous Sessions
+
+Deep into a long session, Fable 5 can end a turn with a statement of intent instead of a
+tool call, and Opus 5.5 with a text-only `end_turn` progress report. **Neither is
+completion.** Keep a checklist; auto-continue naming the open items, capped at 2-3
+continuations. Put this block in the initial system prompt, never mid-session (it
+invalidates thinking on 5.x):
+
+```
+You are operating autonomously. The user is not watching in real time. For
+reversible actions that follow from the original request, proceed without
+asking. Before ending your turn, check your last paragraph. If it is a plan,
+a list of next steps, or a promise, do that work now with tool calls.
+```
+
 ---
 
-## 8. send-to-user Tool Pattern (Claude Fable 5)
+## 8. send-to-user Tool Pattern (Claude Fable 5 / 5.1, Opus 5.5, Sonnet 5.5)
 
 For long async agents, a tool that delivers messages verbatim mid-turn without ending it:
 
@@ -359,9 +404,11 @@ call send_to_user. Use only for user-facing content, not narration or reasoning.
 
 Tool inputs are never summarized, so content arrives intact. Defining the tool alone is insufficient -- Fable 5 rarely calls it without explicit elicitation in the system prompt.
 
-## 9. Memory Systems (Fable 5 / Long-Horizon)
+On Fable 5.1, Opus 5.5, and Sonnet 5.5, declare the tool from the **first** request. Silent-step nudge: after about 5 silent tool steps, the harness appends a turn-scoped system message ("The user hasn't heard from you in a while -- say in a few words what you're doing, then continue."), max 2-3 nudges. Frequent harness text after tool results can look like injection to Sonnet 5.5.
 
-Fable 5 performs notably better with persistent memory:
+## 9. Memory Systems (Fable 5 / 5.1 / Long-Horizon)
+
+Fable 5 and 5.1 perform notably better with persistent memory (the same file pattern is a cheap win on Opus 5.5 and Sonnet 5.5 long runs):
 
 ```
 Store one lesson per file with a one-line summary at the top.
@@ -383,9 +430,9 @@ The memory tool pairs well with context awareness for managing context transitio
 
 Dominant cost pattern: **frontier model as orchestrator, cheaper model as executor**.
 
-- Fable 5 orchestrates, Sonnet 5/Opus 4.8 executes
+- Fable 5.1 orchestrating Sonnet 5.5, or Opus 5.5 executor + Fable 5.1 advisor (+1.7 pts at ~2.1× cost — test on your workload)
 - Long-lived subagents for cache-read savings (avoid bottlenecking on slowest)
-- Asynchronous communication between orchestrator and subagents (don't block)
+- Asynchronous communication between orchestrator and subagents (don't block -- a non-blocking harness matters most on Fable 5.1)
 - Separate verification from writing (fresh-context verifier subagents outperform self-critique)
 
 For cost-sensitive workloads, cap delegation explicitly:
@@ -464,34 +511,41 @@ description: [What]. USE WHEN [triggers].
 
 ## 12. Model-Specific Agentic Guidance
 
-### Claude 5 Family
+### Claude 5 Family (Current: Fable 5.1, Opus 5.5, Sonnet 5.5; Legacy: Fable 5, Opus 5, Sonnet 5, Opus 4.8)
 
 Per-model delegation behavior:
 
 | Model | Delegation Style | Watch For |
 |-------|-----------------|-----------|
-| **Fable 5** | Most aggressive parallel dispatch; supports long-lived subagents | Prefer async communication over blocking on each return |
-| **Opus 5** | Delegates readily; effective writer-verifier patterns, few overwrite conflicts | Cap delegation for cost; don't let it use subagents to verify its own work |
-| **Opus 4.8** | Dynamic workflows: hundreds of parallel subagents in one session | Codebase-scale migrations |
-| **Sonnet 5** | More agentic than 4.6; tool usage scales with effort | With thinking OFF, needs explicit tool nudge |
+| **Fable 5.1** | Frequent delegation with explicit guidance; long-lived subagents (Fable 5 carries over) | Serial one-call-per-turn tool use in loops (batching nudge); prefer async communication over blocking; rare early stopping; extras-only scope |
+| **Opus 5.5** | Delegates readily (Opus 5 carries over); text-only `end_turn` progress reports stop unattended loops | Declare the unattended-run block from the first request; elapsed/time-budget line for multi-agent teams; "explore broadly" line for multi-app agents |
+| **Sonnet 5.5** | More agentic than 4.6; tool usage scales with effort; literal | Sometimes answers from training instead of searching (add search-freshness line); unrequested tests/docs; mid-turn user text misread as injection; tool-name case drift |
+| **Fable 5 (legacy)** | Most aggressive parallel dispatch; supports long-lived subagents | Prefer async communication over blocking on each return |
+| **Opus 5 (legacy)** | Delegates readily; effective writer-verifier patterns, few overwrite conflicts | Cap delegation for cost; don't let it use subagents to verify its own work |
+| **Opus 4.8 (legacy)** | Dynamic workflows: hundreds of parallel subagents in one session | Codebase-scale migrations; fallback target for Fable 5.1 |
+| **Sonnet 5 (legacy)** | More agentic than 4.6; tool usage scales with effort | With thinking OFF, needs explicit tool nudge |
 
 - **Strengths**: Long-horizon reasoning, native parallel tool calling, adaptive thinking, subagent delegation
-- **Watch**: Opus 5 and Fable 5 both delegate more readily than prior models
+- **Watch**: Opus 5 caps (cost); Fable 5/5.1 want *more* guided delegation, not less. Forced `tool_choice` returns 400 on Fable 5.1, Opus 5.5, Sonnet 5.5 -- use strict tools or structured outputs
 - **Key XML blocks**: See 06-claude-practices_v5.md Section 4-5, 8
 
-### GPT-5.x
-- **Strengths**: Clean instruction following, minimal verbosity
-- **Watch**: Persistence at low/medium `reasoning_effort`
-- **Key**: Use official agentic contract tags (`<output_contract>`, `<tool_persistence_rules>`, `<verification_loop>`)
+### GPT-6 (Astra / Sol / Luna) and GPT-5.x
+- **Strengths**: Clean instruction following, minimal verbosity; GPT-6 adds async tool calling (`async: true` on function/custom tools, result returned later under the original `call_id`), mid-turn steering over WebSocket Responses, and `configuration_update` (mid-conversation effort change that keeps the cache prefix; no adjacent updates; incompatible with auto-compaction)
+- **Watch (Astra)**: early stopping and approval-seeking -- add an initiative line and a completion definition; under-delegates (say when and how much); over-tests (calibrate down); audit skills/AGENTS.md and strong "ask first" language carried from older models. `reasoning.effort: none` returns 400 on Astra
+- **Watch (GPT-5.x)**: persistence at low/medium `reasoning_effort`
+- **Misalignment monitoring (Astra)**: async monitoring can return `403 misalignment_policy_violation` -- stop dispatching actions and do not auto-retry
+- **Key**: Use the GPT-5.4-guide tag set (`<output_contract>`, `<tool_persistence_rules>`, `<verification_loop>`) or plain labeled sections (the 5.5/5.6/6 guides use labeled sections) -- one convention per prompt; Astra function calling requires the Responses API
 
 ### Gemini 3.x
 - **Strengths**: Massive context (1M), direct instruction execution
-- **Watch**: OMIT sampling params; return thought signatures in stateless multi-turn function calling
+- **Watch**: OMIT sampling params; return thought signatures in stateless multi-turn function calling (unmodified, even across a model switch; resend built-in Search signatures too); exactly one function response per call, matched on both `id` and `name`; keep 10-20 active tools at most; no structured pre-tool text (use `update()`); if it over-uses tools, lower `thinking_level` first, then set an action budget
+- **Stateful mode**: Interactions API (`store: true` + `previous_interaction_id`) manages history server-side; stateless multi-turn is where signatures matter
 - **Key**: All constraints (behavioral AND formatting) in the system instruction at the TOP; context first, specific question last
 
-### Kimi K2.6
-- **Strengths**: Agent Swarm v2 (300 sub-agents, 4,000 steps, ~13-hour runs), 2M context
-- **Key**: Built-in multi-agent orchestration at a scale unmatched elsewhere
+### Kimi K3 / K2.6
+- **K2.6 strengths**: Agent Swarm v2 (300 sub-agents, 4,000 steps, ~13-hour runs; carried over, not re-verified -- Verify)
+- **K3**: long-horizon coding and knowledge work; optional dynamic tool loading (Section 2). Sampling keys are fixed server-side -- send none. Replay full assistant messages verbatim (including `reasoning_content` and `tool_calls`)
+- **Key**: Models reach no external resources by default; wire tools explicitly
 
 ---
 
@@ -505,7 +559,10 @@ Per-model delegation behavior:
 | No state tracking | Can't resume, loses progress | Checkpoint pattern |
 | Over-parallelization | System bottlenecks | Explicit concurrency limits |
 | Micromanaging reasoning | Degrades native capabilities | Goal-oriented prompting |
-| Verbose tool descriptions | Reduces performance **on GPT-5.x only** | 1-2 sentences for OpenAI; detail is fine on Claude/Gemini |
+| Redundant tool descriptions / irrelevant tools exposed (AP-7) | Dilutes selection | State each rule once; expose only relevant tools; detail is fine on all three vendors |
+| Unbounded delegation (AP-13) | Cost blowup on eager delegators (Opus 5) | Explicit subagent cap; no self-verification subagents |
+| No stop condition (AP-13) | Runaway or early-stopping loops | Completion criterion, retry ceiling, checkpoint cadence, escalation path |
+| Steering effort/thinking/concurrency in prose (AP-10) | Ignored or overtriggers | Set it in API config |
 
 ---
 
@@ -526,5 +583,6 @@ Per-model delegation behavior:
 
 - Anthropic "Building Effective Agents" (2025)
 - Anthropic Claude Code Documentation (2025-2026)
-- OpenAI GPT-5 Agentic Workflows Guide (2025-2026)
+- OpenAI GPT-5 / GPT-6 Agentic Workflows Guides (2025-2026)
+- Model Context Protocol specification `2026-07-28`
 - Yao, S., et al. (2022). "ReAct: Synergizing Reasoning and Acting." [arXiv:2210.03629](https://arxiv.org/abs/2210.03629)
