@@ -20,3 +20,5 @@ __pycache__/
 # local reference legacy versions
 archive/
 reference/
+# Serena MCP local state
+.serena/
