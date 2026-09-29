@@ -35,6 +35,8 @@ Return JSON:
 
 `limits` and `confidence` are the quality surface. Keep them as **sections of the output contract**, never as a behavioral instruction ("double-check your findings") — that phrasing is AP-16 and buys cost, not accuracy, on models that self-verify.
 
+Chat analysis on Opus 5.5: optionally add `Once you have answered something, treat that answer as done. On later turns, focus your thinking on what the user is asking now, and don't go back over an earlier answer unless the user asks about it or points out a problem with it.` Skip it for long analyses and agentic work -- it can suppress self-correction.
+
 ## Research over retrieved documents
 
 Grounding needs three clauses together — source restriction, per-claim attribution, and an abstention path. Drop one and the model fills the gap from memory.
@@ -58,6 +60,12 @@ knowledge.
 Return JSON:
 {"answer": "string", "sources": ["doc IDs"], "confidence": "number (0.0-1.0)"}
 ```
+
+Freshness and completion:
+
+- Research/support on Sonnet 5.5: `Use the search tool to check specifics that may have changed since your training, such as what is allowed, required or charged, even when you feel confident. For researched work such as a report or a comparison, gather current sources rather than writing from your training knowledge.`
+- Low-effort memory answers on Fable 5.1: recognizing a name is not knowing its current state -- tell it to search the name as written, or raise effort for that turn.
+- Deep-search prompts: state an explicit completion criterion (what counts as done) up front.
 
 Structure the corpus with stable IDs and semantic chunks. Refer to documents by ID, never by position — "the second-to-last document" is AP-15 and degrades with context length.
 

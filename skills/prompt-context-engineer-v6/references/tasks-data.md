@@ -34,6 +34,7 @@ Prefer the native mechanism whenever the provider exposes one — it constrains 
 |---|---|
 | OpenAI | `response_format={"type": "json_object"}` |
 | Google | `generation_config={"response_mime_type": "application/json"}` |
+| Google (Interactions API) | `response_format` — field details in `models-google.md` |
 | Anthropic | No JSON-mode flag documented — the KB directs you to XML output tags or an explicit JSON instruction; check `references/specs-current.md` before asserting otherwise |
 
 | Use native structured output when | Use prompt-level format instructions when |
@@ -44,6 +45,8 @@ Prefer the native mechanism whenever the provider exposes one — it constrains 
 | The schema is stable | The response mixes prose and structure |
 
 Native mode and a schema in the prompt are complements: the flag guarantees valid JSON, the schema decides *which* JSON. Ship both. For Gemini, opening the expected structure inside the prompt text (showing the response starting with `{"`) anchors the format — this is prompt-level anchoring, not an API `prefix` parameter, which Gemini does not have. For Claude, XML output tags delimit structure reliably.
+
+JSON on multi-step reasoning (Sonnet 5.5): use structured outputs plus adaptive thinking, and end the system prompt with "Think the problem through before you answer." (or use `xhigh` alone; not `between_tools`). Treat `stop_reason:"max_tokens"` as failure even when the JSON is valid. Without structured outputs, parse the **last** JSON value, not first `{` to last `}`.
 
 ## Extraction
 
@@ -63,6 +66,8 @@ text, return null for it -- do not infer, and do not omit the key.
 ```
 
 Do not narrate the procedure — "scan for names, then dates, then amounts" is AP-1 and costs recall.
+
+Vision inputs (charts, drawings, dense scans): crop/zoom/code tools beat raising effort on Sonnet 5.5 and Fable 5.1; Opus 5.5 needs less scaffolding, so re-test old vision scaffolding before keeping it.
 
 ## Transformation
 
@@ -107,6 +112,8 @@ Borderline definitions belong in the schema annotation or in two or three exampl
 ## Batch and pipeline notes
 
 Validate on receipt and re-run failures rather than repairing text; process independent records in parallel; keep the schema block byte-identical across calls so the shared prefix stays cacheable.
+
+Gemini Flash-Lite extraction: keep the default `minimal` thinking for throughput; raise it only for subagents that use tools.
 
 ## Cross-references
 

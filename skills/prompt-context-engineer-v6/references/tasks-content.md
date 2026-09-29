@@ -59,6 +59,21 @@ redundant summaries, or boilerplate.
 
 The formatting style of your own prompt leaks into the output: a heavily bulleted prompt produces bulleted prose. Write the prompt in the register you want back.
 
+## Per-model writing fixes
+
+Output-style defaults, fixed in the prompt. Per-model settings stay in `models-*.md`.
+
+| Model | Symptom | Fix |
+|---|---|---|
+| Fable 5.1 | Dense, mannered prose | Define "mannered prose" (prefer the user message), or just `Please remove all mannered prose.` |
+| Fable 5.1 | Too little formatting | Delete anti-formatting rules; add a when-to-use-lists rule instead |
+| Fable 5.1 | Unmarked quotations | One complete `<example>` (request, response, rationale) showing quotes marked |
+| Fable 5.1 | Long deliverable at the top effort tiers | Prefer `high`. Otherwise size `max_tokens` for thinking plus reply and tell it: single limit of about N tokens, don't compose the deliverable twice |
+| GPT-6 Astra | Heavy Markdown, recurring phrases | Specify the style (plain paragraphs, lists only for parallel or sequential items) and add the blocklist below |
+| GPT-5.6 | Too brief under a broad "be concise" | State what a short answer must keep; define tone by concrete writing choices, not labels like "friendly" |
+
+Official GPT-6 anti-slop blocklist: "delve", "foster", "leverage", "it's worth noting", "importantly", "genuinely", "Bottom Line:", "In short:", and contrastive "X, not Y" framing. Use it as an output-style fix, not a prompt anti-pattern.
+
 ## Iteration and variation
 
 | Goal | Move |

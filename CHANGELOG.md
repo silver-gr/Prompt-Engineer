@@ -2,6 +2,64 @@
 
 All notable changes to the Prompt Engineering Knowledge Base are documented in this file.
 
+## [6.1.0] - 2026-09-29 — Skill refresh
+
+Research-driven refresh of the `prompt-context-engineer` v6 skill (skill only; the
+`0N-*_v5.md` knowledge-base files were not touched and now lag the skill). Sources: seven
+research docs in `-HQ/docs-reference/2026-09-29-prompting-research-*.md` (Anthropic, OpenAI,
+Google, xAI/Meta/Mistral, Chinese labs + open-weight, papers, landscape); process kit in
+`-HQ/plans/2026-09-29-pce-refresh-v6/` (edit plan: `50-edit-plan.md`).
+
+### Models
+
+- **Claude:** Fable 5.1, Opus 5.5 and Sonnet 5.5 are the current lineup; Fable 5, Mythos 5,
+  Opus 5, Sonnet 5 and Opus 4.8 move to "legacy (still available)". Opus 5.5 becomes the
+  skill's default target. Sonnet 5 is $2/$10 permanently. Opus 4.1 marked retired.
+- **GPT:** GPT-6 Astra / Sol / Luna added (Astra top, Sol middle, Luna bottom). GPT-6 Sol and
+  Luna are successors to, not the same models as, GPT-5.6 Sol and Luna; Terra has no GPT-6
+  successor. GPT-5.6 Sol repriced; Terra/Luna prices filled; GPT-5.3 Instant marked retired.
+- **Gemini:** 3.6 / 3.7 / 3.8 Flash added (3.8 Flash is the top text model); 3.5 Pro recorded
+  as unreleased; Gemini 2.0 shutdown and 2.5 new-user block recorded.
+- **Other vendors:** Grok 4.7 / 4.6 / 4.3, Meta Muse Spark and Muse Glimmer (Llama is frozen
+  at Llama 4), Mistral Medium 3.5 / Small 4, DeepSeek V4.1-Flash, Qwen 3.8-Max GA, GLM-5.3,
+  MiniMax M3.1-Flash-Preview, Mercury 2.5, Xiaomi MiMo-V2.6.
+- **Spec fixes:** Kimi K2.6 context (262,144, not 2M), GLM-5.2 and MiniMax M3 max output,
+  MiniMax M3 license and context, Mercury 2 max output, Mistral Large 3 release date,
+  Qwen 3.7 official price.
+
+### API-breaking constraints (SKILL.md Step 3)
+
+- Opus 5.5 and Fable 5/5.1 reject `thinking: disabled` at any effort; Sonnet 5.5 replaces it
+  with `between_tools`. Fable 5.1 / Opus 5.5 / Sonnet 5.5 reject forced `tool_choice` and
+  replayed thinking after history edits (newer accounts).
+- Gemini sampling params formally deprecated (ignored on 3.6+); prefilled model turns → 400 on
+  3.6+; `thinking_level: minimal` rejected on 3.7+.
+- GPT-6 Astra rejects `reasoning.effort: none` and needs the Responses API for tool calls.
+- Other vendors' never-send keys (Kimi sampling, GLM-5.3 thinking-off, DeepSeek replay, Muse
+  Spark keys) collected in `models-frontier-other.md`.
+
+### Anti-patterns (no new IDs; KB numbering preserved)
+
+- AP-2: Gemini caveat — Google's own template ships a step-by-step line; a live instruction
+  is still flagged, with deletion noted as low-risk. Sonnet 5.5 closing "think the problem
+  through" line (official, JSON reasoning) is not a hit.
+- AP-3: Claude exempt (Anthropic recommends 3–5 examples); Gemini wording updated.
+- AP-7: OpenAI now asks for "when to use it" in tool descriptions; the finding is redundancy.
+- AP-16: now Opus 5 and GPT-6 Astra; Fable 5 removed (its guidance asks for periodic self-checks).
+- AP-17: extended to Fable 5.1, Opus 5.5 and Sonnet 5.5 (reasoning-extraction refusals are billed).
+- AP-1: constraint-count ceiling added from multi-source papers evidence.
+
+### Structure
+
+- `specs-current.md` split: other-vendor numbers moved to new `specs-other.md` (invariant 1
+  amended to name both; one date stamp still covers both).
+- `models-anthropic.md` split: generation deltas and the legacy era moved to new
+  `migrate-anthropic.md`. Both new files have Step 2 rows.
+- Gemini constraint-ordering rule rewritten: its source (Vertex Gemini 3 guide) now 404s.
+- Guidance additions: GPT-6 Astra behavior section, Sonnet 5.5 / Fable 5.1 / Opus 5.5 per-model
+  Add/Remove lists, compaction-loss numbers, LLM-judge reference-answer slot and anchoring,
+  MCP `2026-07-28` note.
+
 ## [6.0.1] - 2026-07-29 — Accuracy Audit
 
 Every file was fact-checked against official vendor documentation by an independent

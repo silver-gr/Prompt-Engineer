@@ -42,6 +42,16 @@ boundaries (user input, external APIs).
 </scope_control>
 ```
 
+Model-specific scope levers (behavior, not settings):
+
+| Model | Failure | Add |
+|---|---|---|
+| Sonnet 5.5 | Stops to check in; adds unrequested files | `Keep working until everything the user asked for is done, and only stop to ask when you can't go on without the user or before a risky step.` Then: `When the work the user asked for is done and checked, stop and report. Don't add features, tests, files, docs or refactors that weren't asked for. If you think one would help, mention it at the end instead of doing it.` The first line raises cost at low/medium effort. |
+| Fable 5.1 | Extra fixes, extra tests, whole-file rewrites | Extras-only paragraph: report nearby problems as follow-ups rather than fixing them; commit tests only where the task asks, roughly one focused test per stated behavior; implement every requested behavior completely. Edit line: `when it will not affect the end result, try to surgically edit a file rather than rewrite the entire thing.` |
+| Opus 5.5 (frontend) | Default look | Name the specific patterns to avoid (e.g. cream background, italic accent words, "01/02/03" labels, monospace labels, pill buttons) and iterate the list. "Avoid a generic AI look" only swaps one default for another. |
+
+Repo guidance files (GPT-6): Astra is more sensitive to AGENTS.md and skills than earlier GPT models. Use contextual doc pointers, not "read X, Y, Z before every edit", and grant explicit permission for safe local test loops.
+
 ## Review — the recall trap
 
 Review prompts tuned for earlier models show **lower recall** on current models. This is a harness effect, not a capability regression: current models follow a filter instruction such as `only report high-severity` literally and silently drop real findings that fall under the bar.
@@ -96,6 +106,14 @@ for all valid inputs, not just the test cases. Do not hard-code values.
 If you create any temporary files, scripts, or helper files for iteration,
 clean up by removing them at the end of the task.
 ```
+
+Verification is part of the task procedure, not a self-check instruction (AP-16 covers the latter):
+
+| Model | Verification wording |
+|---|---|
+| Sonnet 5.5 (low effort) | Add the official paragraph: run a real check that exercises the change before reporting done; install declared deps with the project's own package manager, never sudo; if no real check can run, say which one was not run and why. |
+| GPT-5.6 | Keep explicit steps: targeted tests, type check, build, smoke test. |
+| GPT-6 Astra | The opposite: `Do not write tests for reversible, low-impact changes that mirror the implementation.` Broaden testing only when new changes, failures, or unresolved concerns justify it. |
 
 ## Cross-references
 

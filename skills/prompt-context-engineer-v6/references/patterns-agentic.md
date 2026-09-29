@@ -10,11 +10,11 @@ No universal rule exists — vendors disagree, and following the wrong one costs
 
 | Provider | Guidance | "When to use it" text |
 |---|---|---|
-| OpenAI | Keep crisp; verbose descriptions degrade quality | Redundant — remove |
+| OpenAI | Concise and precise: what it does, when to use it, return fields, errors; expose only relevant tools | Include, concisely |
 | Anthropic | Describe what the tool does *and* when to use it | Recommended when tool choice is ambiguous |
 | Google | No maximum; capabilities, conditions, examples encouraged | Recommended |
 
-AP-7 (tool description verbosity) is an OpenAI-scoped finding; a detailed Claude or Gemini description is not a violation. Universal rules: one short line per parameter, enums where the value set is closed, edge-case handling in code rather than in the description.
+AP-7 targets redundancy and irrelevant tools, not detail — a detailed Claude or Gemini description is not a violation. Universal rules: one short line per parameter, enums where the value set is closed, edge-case handling in code rather than in the description.
 
 ```json
 {
@@ -26,6 +26,10 @@ AP-7 (tool description verbosity) is an OpenAI-scoped finding; a detailed Claude
   }
 }
 ```
+
+MCP spec `2026-07-28`: tool schemas may use full JSON Schema 2020-12; return `tools/list` in a deterministic order to keep the prompt-cache prefix stable; Sampling, Roots, and Logging are deprecated — call provider APIs directly.
+
+Gemini: do not demand XML/JSON status text right before a tool call — use an `update()` tool (see models-google.md).
 
 ## Goal-oriented prompting
 
@@ -54,14 +58,15 @@ Frontier model orchestrates, cheaper model executes.
 ```xml
 <handoff_format>
 When delegating: TASK (specific deliverable, 1-2 sentences), CONTEXT (only what
-they need), CONSTRAINTS (quality requirements, boundaries), OUTPUT (expected format).
+they need), POLICY FACTS (facts that must survive the handoff, including exculpating
+ones, and who may use them), CONSTRAINTS (quality, boundaries), OUTPUT (format).
 When receiving results: validate completeness, integrate, decide next action.
 </handoff_format>
 ```
 
 ## Subagent caps
 
-Current Claude models delegate more readily than prior generations — Opus 5 and Fable 5 both dispatch subagents on work a single agent finishes faster. Uncapped delegation is AP-13.
+Opus 5 delegates more readily than prior generations; Fable 5/5.1 guidance is the opposite — use subagents frequently, with explicit guidance on when; GPT-6 Astra under-delegates — say when and how much. Uncapped delegation is AP-13.
 
 ```
 Delegate to a subagent only for large tasks that are genuinely independent and
@@ -89,7 +94,7 @@ After each major step: save state to file, report progress, and on interruption 
 
 ## Early stopping in long autonomous sessions
 
-Deep into a long session, Fable 5 can end a turn with a statement of intent instead of a tool call — the plan is stated, the work is not done. Mitigation for unattended pipelines:
+Deep into a long session, Fable 5 can end a turn with a statement of intent instead of a tool call, and Opus 5.5 with a text-only `end_turn` progress report — neither is completion. Keep a checklist; auto-continue naming the open items, capped at 2-3 continuations. Put this block in the initial system prompt, never mid-session (it invalidates thinking on 5.x):
 
 ```
 You are operating autonomously. The user is not watching in real time. For
@@ -116,7 +121,7 @@ Delivers content verbatim mid-turn without ending it; tool inputs are never summ
 }
 ```
 
-Defining the tool is not enough — Fable 5 rarely calls it without elicitation: `Between tool calls, when you have content the user must read verbatim, call send_to_user. Use only for user-facing content, not narration or reasoning.`
+Defining the tool is not enough — Fable 5 rarely calls it without elicitation: `Between tool calls, when you have content the user must read verbatim, call send_to_user. Use only for user-facing content, not narration or reasoning.` Declare it from the first request on Fable 5.1, Opus 5.5, and Sonnet 5.5; after ~5 silent tool steps the harness nudges via a turn-scoped system message, max 2-3 nudges.
 
 ## Memory files and cross-window state
 
@@ -134,17 +139,11 @@ Bootstrap from history with `Reflect on previous sessions. Use subagents to iden
 
 ```
 DO: State the goal and constraints; let the model choose the tool sequence.
-DO: Match tool-description verbosity to the target provider, not a universal rule.
-DO: Cap subagent delegation explicitly on current Claude models.
+DO: Cap subagent delegation explicitly on eager-delegating Claude models.
 DO: Give every autonomous run a completion criterion, retry ceiling, and checkpoint cadence.
-DO: Verify in a separate lane with fresh context.
-DO: Add the last-paragraph check to unattended long-running prompts.
-DO: Elicit send_to_user in the system prompt, not just in the tool schema.
-DO: Hand subagents the task, relevant files, and key decisions only.
+DO: Add the last-paragraph check to unattended long runs; elicit send_to_user in the system prompt.
 DON'T: Prescribe "first call X, then Y" when dependencies can be stated instead (AP-8).
 DON'T: Let a model use subagents to verify its own work.
-DON'T: Pass full conversation history to a subagent.
-DON'T: Flag a detailed Claude or Gemini tool description under AP-7.
 DON'T: Steer effort, thinking, or concurrency in prose when the API exposes them (AP-10).
 DON'T: Ship an agent loop with no stop condition or scope bound (AP-13).
 ```

@@ -68,7 +68,7 @@ Golden examples are the contract. Each carries an id, input, expected output, fo
 | Consistency | 0.90 of prior version | Min pairwise similarity across 3 runs of the same input |
 | Format compliance | 1.0 | Schema validation on every run |
 
-A regression on accuracy is critical; the others are warnings. Run the suite against old and new prompt in the same session, on the same model — a prompt change and a model change evaluated together produce an uninterpretable result.
+A regression on accuracy is critical; the others are warnings. Run the suite against old and new prompt in the same session, on the same model — a prompt change and a model change evaluated together produce an uninterpretable result. On a model change, compare at the same effort and one level lower, measure cost per *successful* task, and count fewer tokens as a win only if evals still pass.
 
 ## CI pipeline
 
@@ -90,6 +90,7 @@ Score the assistant response below against the rubric.
 
 <task_description>{task_description}</task_description>
 <input>{input}</input>
+<reference_answer>{reference}</reference_answer>
 <response_to_evaluate>{response}</response_to_evaluate>
 <evaluation_criteria>{criteria}</evaluation_criteria>
 
@@ -106,9 +107,11 @@ Criteria sets worth separating rather than merging: accuracy (factual correctnes
 
 | Failure mode | Symptom | Mitigation |
 |---|---|---|
-| Verbosity bias | Longer answers score higher regardless of content | Calibrate against ground-truth-scored items; penalize length explicitly in criteria |
+| Verbosity bias | Longer answers score higher regardless of content (mainly reference-free; not observed under rubric + reference grading) | Calibrate against ground-truth-scored items; penalize length explicitly in criteria |
 | Miscalibration | Scores drift from human judgment | Correlate judge scores with a labelled set; treat correlation above 0.7 and absolute bias below 0.5 as the reliability bar |
 | Single-judge variance | One judge, one opinion, no error estimate | Multi-judge consensus; report mean and variance, flag spread above 1 point |
+| Anchoring | Prior scores, attempt counts or "revised" framing in judge context shift scores; CoT and warnings do not remove it | Strip them from judge context |
+| Authorship labels | Judge favors output labelled its own | Blind self/other labels |
 | Criteria collapse | Judge rates one global impression across every criterion | Force per-criterion JSON scores and require an issues list |
 | Judge inherits prompt anti-patterns | Judge prompt itself carries CoT scaffolding and drifts | Apply AP-1..AP-19 to the judge prompt too |
 
@@ -128,8 +131,10 @@ Cache hits depend on an exact prefix match, so any edit invalidates everything d
 | Provider | Mechanism |
 |---|---|
 | Anthropic | Explicit `cache_control` breakpoints |
-| OpenAI | Automatic prefix caching |
+| OpenAI | Automatic prefix caching; explicit breakpoints optional on GPT-5.6+ |
 | Google | Explicit cache creation via API |
+
+xAI cache hits need append-only history plus a sticky routing key. Kimi and Claude 5.x: pick effort before the session; top-level effort changes break the cache.
 
 See `references/specs-current.md` for pricing and any numeric cache terms. Complementary token levers: zero-shot first (fewer tokens *and* usually better output), at most one or two examples and only to demonstrate format, structured output over verbose prose, no conversational padding, and the smallest model tier that passes the eval.
 
@@ -139,12 +144,7 @@ DO: Ship the simpler prompt when it lands within 5% of the complex one.
 DO: Re-score after every distillation step and accept within 2% of baseline.
 DO: Keep golden examples with a critical flag that blocks deployment.
 DO: Measure consistency across repeated runs of the same input, not one run.
-DO: Calibrate the judge against ground-truth-labelled items before trusting it.
-DO: Use multiple judges and report variance, not a single number.
-DO: Order prompts stable content first, dynamic content last.
-DON'T: Compare a prompt change and a model change in the same evaluation run.
-DON'T: Report a raw judge score without its calibration.
+DO: Calibrate the judge against labelled items and use multiple judges, reporting variance.
 DON'T: Treat a lint string match inside a quote, negation, or code fence as a violation.
-DON'T: Add examples or CoT scaffolding that the baseline comparison has not justified.
 DON'T: Edit stable prefix content casually — it invalidates every cached token after it.
 ```
