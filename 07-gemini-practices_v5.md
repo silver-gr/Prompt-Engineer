@@ -366,14 +366,12 @@ You are a strict code reviewer. You reject code with any security vulnerabilitie
 
 ### Core Functionality
 
-*(Figures in this Deep Research section — "40-250+ sites", "$20/mo", "30k characters" — are carried over; not re-verified this cycle.)*
-
-Gemini Deep Research is an autonomous AI assistant that analyzes 40-250+ websites to produce comprehensive, multi-page reports with full citations. It iteratively searches, learns, and synthesizes information.
+Gemini Deep Research is an autonomous AI assistant that produces comprehensive, multi-page reports with full citations. It iteratively searches, learns, and synthesizes information.
 
 ### Activation
 - Available in the Gemini web interface
 - Research plan review is **opt-in**: set `collaborative_planning=true`. Default is `false`, so execution normally starts without showing a plan
-- Tiered access: free (limited), AI Pro ($20/mo), Ultra (highest limits)
+- Tiered access: free (limited), AI Pro, Ultra (highest limits)
 
 ### Effective Prompt Patterns
 
@@ -396,9 +394,8 @@ Deliverables: Executive summary, competitor comparison table, risk analysis.
 **Edit the plan**: The most impactful technique is reviewing and editing the proposed research plan before execution -- but you must opt in with `collaborative_planning=true` first. Once shown, add, remove, or refocus steps using natural language.
 
 ### Key Capabilities
-- Iterative research: 40-250+ sites per query
-- 1M token context for processing hundreds of pages
-- File uploads: up to 10 files (PDFs, Docs, images)
+- Long context for processing hundreds of pages
+- File uploads (PDFs, Docs, images)
 - Google Workspace integration (Drive, Docs)
 - Canvas transformation (infographics, audio summaries, interactive pages)
 - API access via the **Gemini Interactions API** (the Deep Research Agent is exclusive to it -- not the Vertex AI Discovery Engine API)
@@ -409,7 +406,7 @@ Deliverables: Executive summary, competitor comparison table, risk analysis.
 - Surface-level analysis (overviews, not expert depth)
 - Unreliable for real-time data (stock prices, breaking news)
 - Hallucination risk (verify all claims)
-- Context collapse after ~30k characters (start new chats)
+- Quality degrades in long chats (start new chats)
 
 ---
 

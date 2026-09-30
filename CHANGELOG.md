@@ -22,8 +22,9 @@ refreshed skill (6.1.0). Every number was checked against the skill's `specs-cur
   code samples (02, 04); "reasoning profiles" (00); prefill-400 scope "4.6+" (03, 06);
   Sonnet 5.5 "thinking off" (10); "Mythos has no classifiers" (09); Gemini "constraints last"
   as a hard rule (07).
-- **Marked "(not re-verified)":** GPT-5.2 / 5.1 / 5 effort enums, Gemini Deep Research
-  figures, Claude research-tool table.
+- **Marked "(not re-verified)":** GPT-5.2 / 5.1 / 5 effort enums.
+- **Removed unsourced figures:** research-tool comparison table (06); Gemini Deep Research
+  site counts, price, file and context limits (07).
 - Skill follow-ups: duplicate snippets replaced by pointers; legacy Opus 4.6 / Sonnet 4.6 /
   Sonnet 4.5 notes restored in `specs-current.md`. `CLAUDE.md` model table updated.
 

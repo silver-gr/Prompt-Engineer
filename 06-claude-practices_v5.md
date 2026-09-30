@@ -452,7 +452,7 @@ The formatting style in your prompt influences response style. Removing markdown
 
 ### Core Functionality
 
-Claude Research tool conducts multi-step investigations via 5-20+ web searches, synthesizing findings into citation-backed reports.
+Claude Research tool conducts multi-step investigations via multiple web searches, synthesizing findings into citation-backed reports.
 
 ### Activation Requirements
 - Available in Claude.ai web/desktop/mobile interfaces only (NOT via API)
@@ -480,16 +480,6 @@ Research CockroachDB and TiDB.
 ```
 
 **Quote-First Method**: For long documents, ask Claude to extract direct quotes first, then analyze using only quotes. Grounds responses in actual text.
-
-### Research Tool Comparison
-
-*(Carried over; not re-verified this cycle.)*
-
-| Feature | Claude Research | Gemini Deep Research | ChatGPT Deep Research |
-|---------|----------------|---------------------|-----------------------|
-| Sources per query | 5-20+ | 40-250+ | 10-50+ |
-| Context window | 1M | 1M | 128K |
-| Strength | Document analysis, uncertainty | Breadth, cost | Polished reports |
 
 ---
 
