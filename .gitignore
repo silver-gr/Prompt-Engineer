@@ -22,3 +22,5 @@ archive/
 reference/
 # Serena MCP local state
 .serena/
+.repowise/
+skills/prompt-context-engineer.zip
