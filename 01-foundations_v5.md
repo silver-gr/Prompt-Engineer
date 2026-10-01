@@ -224,6 +224,7 @@ Best practice: Let model decide. Raise effort for depth, not "think harder".
                                      // GPT-5.5: none/low/medium/high/xhigh
                                      // GPT-5.6, GPT-6 Sol/Luna: none..max
                                      // GPT-6 Astra: low..max; "none" -> 400
+                                     // GPT-6.1 Sol: low..max; no "none"/"minimal"
                                      // Older GPT-5 base: minimal/low/medium/high
   // "mode": "standard"|"pro" is a separate reasoning field (5.6+, Responses only)
 }

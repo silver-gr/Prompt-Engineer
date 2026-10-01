@@ -635,7 +635,7 @@ def optimize_for_claude(prompt):
 ```python
 def optimize_for_gpt(prompt, complexity, model='gpt-6-astra'):
     structured = structure_with_markdown(prompt)
-    # Astra: 'none' -> 400; lowest valid is 'low'. Sol/Luna and GPT-5.6 accept 'none'.
+    # Astra: 'none' -> 400; GPT-6.1 Sol has no 'none'; lowest valid is 'low'. GPT-6 Sol/Luna and GPT-5.6 accept 'none'.
     config = {'model': model, 'input': structured, 'reasoning': {'effort': 'medium'}}
     if complexity == 'high':
         config['reasoning']['effort'] = 'high'

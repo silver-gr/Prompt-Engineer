@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **Prompt Engineering Knowledge Base v6.1** (September 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (Claude Fable 5.1/Opus 5.5/Sonnet 5.5, GPT-6 Astra/Sol/Luna, Gemini 3.8 Flash, and 10+ other frontier models).
+This is a **Prompt Engineering Knowledge Base v6.1** (September 2026 edition) - a comprehensive reference guide documenting modern prompt engineering techniques for frontier AI models (Claude Fable 5.1/Opus 5.5/Sonnet 5.5, GPT-6 Astra/6.1 Sol/Luna, Gemini 3.8 Flash, and 10+ other frontier models).
 
 ## Architecture
 
@@ -44,7 +44,7 @@ The repository follows a modular documentation structure (11 files, ~6,200 lines
 | **Claude Sonnet 5.5** | Thinking on, lowest `between_tools` (≤`high`) | Literal instruction following, state scope, add "stop when done" line |
 | **Claude 5.1/5.5 (all)** | No prefill, sampling, `budget_tokens`, forced `tool_choice` | Keep history append-only; pass thinking blocks back unchanged |
 | **Gemini 3.x** (3.8 Flash top) | OMIT temp/top_p/top_k; no prefill (3.6+) | Direct instructions; persona + output format at top, question last |
-| **GPT-6** (Astra › Sol › Luna) | `reasoning.effort` (enum is PER-MODEL; Astra rejects `none`) | Outcome-first prompts; Astra: define completion, calibrate testing |
+| **GPT-6** (Astra › 6.1 Sol › Luna) | `reasoning.effort` (enum is PER-MODEL; Astra and 6.1 Sol reject `none`) | Outcome-first prompts; Astra: define completion, calibrate testing |
 | **GPT-5.x** | `reasoning.effort` (enum is PER-MODEL) | Outcome-first minimal prompts, XML tags recommended |
 
 ## Anti-Patterns to Avoid

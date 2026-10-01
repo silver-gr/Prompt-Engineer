@@ -13,7 +13,8 @@ This is the **single source of truth** for all model specifications, capabilitie
 | Anthropic | Sonnet 5.5 | 1M | 128K | Sep 28 2026 | Cost-efficient, literal instruction following |
 | Anthropic | Haiku 4.5 | 200K | 64K | Oct 2025 | Speed + quality, sub-agents |
 | OpenAI | GPT-6 Astra | 1.05M | 128K | Sep 3 2026 | OpenAI top tier; no `none` effort |
-| OpenAI | GPT-6 Sol / Luna | 1.05M | 128K | Sep 22 2026 | Middle / efficient tiers |
+| OpenAI | GPT-6.1 Sol | 1.05M | 128K | Sep 29 2026 | Middle tier (recommended Sol); no `none` effort |
+| OpenAI | GPT-6 Sol / Luna | 1.05M | 128K | Sep 22 2026 | Middle (superseded by 6.1 Sol, still live) / efficient tiers |
 | OpenAI | GPT-5.6 Sol / Terra / Luna | 1.05M | 128K | Jul 9 2026 | Prior generation, still live; `max` effort tier |
 | OpenAI | GPT-5.5 | 1.05M | 128K | Apr 24 2026 | Prior flagship |
 | Google | Gemini 3.8 Flash | 1M | 64K | Sep 2 2026 | Top Gemini text model (GA) |
@@ -186,23 +187,27 @@ All 1M context / 128K output. Guidance for these models stays valid; prefer the 
 ## 2. OpenAI (GPT-6 and GPT-5.x)
 
 > **GPT-6 tier order: Astra > Sol > Luna.** In GPT-5.6, Sol was the flagship (~unsuffixed), Terra ~ mini, Luna ~ nano. **"Sol" names a different tier per generation** -- GPT-6 Sol/Luna are not GPT-5.6 Sol/Luna (different IDs, prices, cutoffs, parameter rules). Terra has no GPT-6 successor; Astra is not a renamed Terra.
+>
+> **GPT-6.1 Sol** (Sep 29 2026) is OpenAI's recommended Sol: the featured trio is `gpt-6-astra` / `gpt-6.1-sol` / `gpt-6-luna`. There is no GPT-6.1 Astra (not released, on safety grounds) and no GPT-6.1 Luna. `gpt-6-sol` stays live with no deprecation notice.
 
-### GPT-6 Astra / Sol / Luna
+### GPT-6 Astra / 6.1 Sol / Sol / Luna
 
 | Variant | Model ID | Released | Knowledge cutoff | $ in / cached / out per 1M (cache write) | Effort enum (default) |
 |---------|----------|----------|------------------|-------------------------------------------|-----------------------|
 | **Astra** | `gpt-6-astra` | Sep 3 2026 | Apr 30 2026 | $10 / $1.00 / $50 ($12.50) | `low` `medium` `high` `xhigh` `max`; **`none` → 400**; default not documented |
+| **6.1 Sol** | `gpt-6.1-sol` | Sep 29 2026 | Apr 30 2026 | $2 / $0.10 / $10 ($2.50) | `low` `medium` `high` `xhigh` `max` (`medium`); no `none` or `minimal` (error code not documented) |
 | **Sol** | `gpt-6-sol` | Sep 22 2026 | Apr 20 2026 | $2 / $0.20 / $10 ($2.50) | `none`…`max` (`medium`) |
 | **Luna** | `gpt-6-luna` | Sep 22 2026 | May 18 2026 | $0.10 / $0.01 / $0.50 ($0.125) | `none`…`max` (`medium`) |
 
-- **Context Window**: 1,050,000 tokens | **Max Output**: 128,000 tokens (all three)
-- `reasoning.mode: "standard"|"pro"` (Responses only; replaces separate Pro slugs on 5.6+; no `gpt-6-*-pro` IDs). `reasoning.context`: `auto` (= `all_turns`, default on 5.6+) | `all_turns` | `current_turn`
+- **Context Window**: 1,050,000 tokens | **Max Output**: 128,000 tokens (all four)
+- `reasoning.mode: "standard"|"pro"` (Responses only; replaces separate Pro slugs on 5.6+; no `gpt-6-*-pro` IDs). `reasoning.context`: `auto` (= `all_turns`, default on 5.6+) | `all_turns` | `current_turn` (GPT-6.1 Sol supports `all_turns`; its default is not documented)
 - `text.verbosity` = `low`/`medium`/`high` (documented on Astra; Sol/Luna support (Verify))
-- Function calling: Astra requires the Responses API; Sol/Luna on Chat Completions only with `reasoning_effort:"none"`
+- Function calling: Astra and 6.1 Sol require the Responses API (Chat Completions works without tools); Sol/Luna on Chat Completions only with `reasoning_effort:"none"`
+- GPT-6.1 Sol: cached input bills at 0.05x input (most other GPT-5.6+ models: 0.1x); in ChatGPT it is in Work and Codex only, not Chat; multi-agent beta (`OpenAI-Beta: responses_multi_agent=v1`) is listed for 6.1 Sol and GPT-5.6
 - GPT-6 adds `configuration_update` (mid-conversation effort change), async tool calling, mid-turn steering
 - Sep 25 2026 fix for an image-encoding bug in Sol/Luna: re-run image evals from before Sep 25
 
-**Astra behavior and remedies** (no separate Sol/Luna guide; evaluate there):
+**Astra behavior and remedies** (no separate 6.1 Sol, Sol or Luna guide; evaluate there):
 - Initiative: asks non-blocking questions, stops early → "persist until the goal is complete", define completion
 - Sensitive to skills/AGENTS.md → audit them; state that user instructions take precedence
 - Heavy Markdown, recurring phrases → specify style
@@ -520,7 +525,7 @@ Not autoregressive. Tokens are generated in parallel by diffusion rather than on
 | Tier | Models | When to Use |
 |------|--------|-------------|
 | **Frontier** | Fable 5.1 ($10/$50), GPT-6 Astra ($10/$50) | Hardest problems, multiday autonomous runs |
-| **Premium** | Opus 5.5 ($4/$20), GPT-6 Sol ($2/$10) | Agentic coding, enterprise, complex tasks |
+| **Premium** | Opus 5.5 ($4/$20), GPT-6.1 Sol ($2/$10) | Agentic coding, enterprise, complex tasks |
 | **Standard** | Sonnet 5.5 ($2/$10), Gemini 3.8 Flash ($0.75/$3.75 intro) | Production workloads, daily coding |
 | **Economy** | Haiku 4.5 ($1/$5), GPT-6 Luna ($0.10/$0.50), Gemini 3.5 Flash-Lite | High-volume, latency-critical |
 | **Budget** | DeepSeek V4.1-Flash, GLM-5.3-Flash, MiMo-V2.6-Flash | Cost-optimized, self-hosted |

@@ -507,7 +507,7 @@ Return as JSON array of test cases.
 - Note: on Opus 5 and GPT-6 Astra, skip explicit verification requests (AP-16) — keep the requirement as an output section (Sources, Limits, confidence)
 
 ### Real-Time Applications (Chatbots, Interactive)
-- Claude: `output_config.effort: "low"` · GPT-5.x / GPT-6: `reasoning.effort: "low"` (`"none"` on 5.2+ (not re-verified this cycle — Verify) except GPT-6 Astra, where `none` returns 400; GPT-5 base uses `"minimal"`) · Gemini: `thinking_level: "low"` on 3.8 Flash (`"minimal"` errors there; valid on 3.6 Flash, 3.5 Flash and Flash-Lite)
+- Claude: `output_config.effort: "low"` · GPT-5.x / GPT-6: `reasoning.effort: "low"` (`"none"` on 5.2+ (not re-verified this cycle — Verify) except GPT-6 Astra, where `none` returns 400, and GPT-6.1 Sol, which has no `none`; GPT-5 base uses `"minimal"`) · Gemini: `thinking_level: "low"` on 3.8 Flash (`"minimal"` errors there; valid on 3.6 Flash, 3.5 Flash and Flash-Lite)
 - Optimize for latency
 - Cache system prompts
 

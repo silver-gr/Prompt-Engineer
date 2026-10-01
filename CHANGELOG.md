@@ -2,6 +2,22 @@
 
 All notable changes to the Prompt Engineering Knowledge Base are documented in this file.
 
+## [6.1.2] - 2026-10-01 — GPT-6.1 Sol
+
+Scoped update for one model, OpenAI GPT-6.1 Sol (`gpt-6.1-sol`, released Sep 29 2026). Source:
+`-HQ/docs-reference/2026-10-01-prompting-research-gpt-6-1-sol.md`.
+
+- **Skill:** new row in `specs-current.md` ($2 / $0.10 cached / $10, 1,050,000 context, 128,000
+  out, effort `low`–`max`, default `medium`, no `none` or `minimal`). The GPT-6 Sol row is now
+  marked "superseded, not deprecated". Notes added for the 0.05× cached-input rate and
+  Responses-only tool calling. The Step 3 parameter row in `SKILL.md` and the `models-openai.md`
+  effort lines now cover 6.1 Sol.
+- **KB:** 03 and 08 gain 6.1 Sol rows, the GPT-6 Sol → 6.1 Sol migration rules, and the
+  selection-guide swap. 00, 01, 04, 05, 10 and `CLAUDE.md` get one-line effort and tier updates.
+- **Not documented, left open:** the HTTP code returned for `none` on 6.1 Sol, the 6.1 Sol
+  `text.verbosity` default, and any 6.1 Sol-specific prompting guidance. There is no GPT-6.1
+  Astra or GPT-6.1 Luna.
+
 ## [6.1.1] - 2026-09-29 — Knowledge-base sync
 
 The 11 KB files (`00-prompt-engineer.md`, `01`–`10-*_v5.md`) brought in line with the

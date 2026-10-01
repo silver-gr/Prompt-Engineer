@@ -529,12 +529,12 @@ Per-model delegation behavior:
 - **Watch**: Opus 5 caps (cost); Fable 5/5.1 want *more* guided delegation, not less. Forced `tool_choice` returns 400 on Fable 5.1, Opus 5.5, Sonnet 5.5 -- use strict tools or structured outputs
 - **Key XML blocks**: See 06-claude-practices_v5.md Section 4-5, 8
 
-### GPT-6 (Astra / Sol / Luna) and GPT-5.x
+### GPT-6 (Astra / 6.1 Sol / Sol / Luna) and GPT-5.x
 - **Strengths**: Clean instruction following, minimal verbosity; GPT-6 adds async tool calling (`async: true` on function/custom tools, result returned later under the original `call_id`), mid-turn steering over WebSocket Responses, and `configuration_update` (mid-conversation effort change that keeps the cache prefix; no adjacent updates; incompatible with auto-compaction)
 - **Watch (Astra)**: early stopping and approval-seeking -- add an initiative line and a completion definition; under-delegates (say when and how much); over-tests (calibrate down); audit skills/AGENTS.md and strong "ask first" language carried from older models. `reasoning.effort: none` returns 400 on Astra
 - **Watch (GPT-5.x)**: persistence at low/medium `reasoning_effort`
 - **Misalignment monitoring (Astra)**: async monitoring can return `403 misalignment_policy_violation` -- stop dispatching actions and do not auto-retry
-- **Key**: Use the GPT-5.4-guide tag set (`<output_contract>`, `<tool_persistence_rules>`, `<verification_loop>`) or plain labeled sections (the 5.5/5.6/6 guides use labeled sections) -- one convention per prompt; Astra function calling requires the Responses API
+- **Key**: Use the GPT-5.4-guide tag set (`<output_contract>`, `<tool_persistence_rules>`, `<verification_loop>`) or plain labeled sections (the 5.5/5.6/6 guides use labeled sections) -- one convention per prompt; Astra and GPT-6.1 Sol function calling requires the Responses API
 
 ### Gemini 3.x
 - **Strengths**: Massive context (1M), direct instruction execution

@@ -1,8 +1,8 @@
 # Current Model Specs
 
-*Verified: September 2026 — the only dated file in this skill; the stamp also covers specs-other.md. Re-check it first.*
+*Verified: September 2026; GPT-6.1 Sol added October 1 2026 — the only dated file in this skill; the stamp also covers specs-other.md. Re-check it first.*
 
-*Source: `-HQ/docs-reference/2026-09-29-prompting-research-*.md` (R1 Anthropic, R2 OpenAI, R3 Google, R4 xAI/Meta/Mistral, R5 China OSS, R6 papers, R7 landscape).*
+*Source: `-HQ/docs-reference/2026-09-29-prompting-research-*.md` (R1 Anthropic, R2 OpenAI, R3 Google, R4 xAI/Meta/Mistral, R5 China OSS, R6 papers, R7 landscape); GPT-6.1 Sol: `2026-10-01-prompting-research-gpt-6-1-sol.md`.*
 
 Every price, context window, max output, model ID, effort enum, thinking default, release date and availability fact used anywhere in this skill lives here and in specs-other.md, and nowhere else. `—` = not stated: leave it blank, do not guess.
 
@@ -57,7 +57,8 @@ Availability: server-side fallback targets: Fable 5.1 → Opus 4.8, Opus 5; Sonn
 | Model | Model ID | Context | Max out | $ in / cached / out per 1M (cache write) | Effort enum (default) | Released |
 |---|---|---|---|---|---|---|
 | GPT-6 Astra | `gpt-6-astra` | 1,050,000 | 128,000 | $10 / $1.00 / $50 ($12.50) | `low` `medium` `high` `xhigh` `max`; `none` → 400; default not documented | Sep 3 2026 |
-| GPT-6 Sol | `gpt-6-sol` | 1,050,000 | 128,000 | $2 / $0.20 / $10 ($2.50) | `none`…`max` (`medium`) | Sep 22 2026 |
+| GPT-6.1 Sol | `gpt-6.1-sol` (no alias, no dated snapshot) | 1,050,000 | 128,000 | $2 / $0.10 / $10 ($2.50) | `low` `medium` `high` `xhigh` `max` (`medium`); no `none` or `minimal` (error code not documented) | Sep 29 2026 |
+| GPT-6 Sol | `gpt-6-sol` | 1,050,000 | 128,000 | $2 / $0.20 / $10 ($2.50) | `none`…`max` (`medium`) | Sep 22 2026; superseded by 6.1 Sol, not deprecated |
 | GPT-6 Luna | `gpt-6-luna` | 1,050,000 | 128,000 | $0.10 / $0.01 / $0.50 ($0.125) | `none`…`max` (`medium`) | Sep 22 2026 |
 | GPT-5.6 Sol | `gpt-5.6-sol` (alias `gpt-5.6`) | 1,050,000 | 128,000 | $4 / $0.40 / $20 ($5) — promo from Aug 21 2026, "at least through Nov 21 2026" | `none`…`max` (`medium`) | Jul 9 2026 |
 | GPT-5.6 Terra | `gpt-5.6-terra` | 1,050,000 | 128,000 | $2 / $0.20 / $12 ($2.50) | same | Jul 9 2026 |
@@ -68,14 +69,14 @@ Availability: server-side fallback targets: Fable 5.1 → Opus 4.8, Opus 5; Sonn
 | chat-latest | `chat-latest` | 400,000 (page as stated) | 128,000 | $5 / $0.50 / $30 | — | rolling alias = ChatGPT Instant; not for production |
 | GPT-5.2 / 5.1 / 5 | `gpt-5.2`, `gpt-5.1`, `gpt-5` | 400K | — | $1.75/$0.175/$14 · $1.25/$0.125/$10 · $1.25/$0.125/$10 | — | Dec 2025 · Nov 13 2025 · Aug 2025 |
 
-GPT-6 order: Astra › Sol › Luna. In GPT-5.6, Sol was the flagship (≈ unsuffixed), Terra ≈ mini, Luna ≈ nano. "Sol" names a different tier per generation; Terra has no GPT-6 successor; Astra is not a renamed Terra. All GPT-5.6 models remain live (no deprecation notice).
-Effort: GPT-6 Astra `none` → HTTP 400 (migrate to `low`). `minimal` still exists on some older models (migrate to `low`). `max` exists on GPT-5.6+ only.
-`reasoning.mode: "standard"|"pro"` on GPT-5.6 and GPT-6 (Responses only), independent of effort; replaces separate Pro slugs for 5.6+; no `gpt-6-*-pro` IDs. `reasoning.context` (5.6+): `auto` (= `all_turns`, default) · `all_turns` · `current_turn`; earlier models default `current_turn`.
+GPT-6 order: Astra › Sol › Luna. The recommended Sol is GPT-6.1 Sol (`gpt-6-astra` / `gpt-6.1-sol` / `gpt-6-luna`); there is no 6.1 Astra or 6.1 Luna. In ChatGPT, 6.1 Sol is in Work and Codex only, not Chat. In GPT-5.6, Sol was the flagship (≈ unsuffixed), Terra ≈ mini, Luna ≈ nano. "Sol" names a different tier per generation; Terra has no GPT-6 successor; Astra is not a renamed Terra. All GPT-5.6 models remain live (no deprecation notice).
+Effort: GPT-6 Astra `none` → HTTP 400 (migrate to `low`). GPT-6.1 Sol rejects `none` and `minimal`: migrate to `low` and compare results. `minimal` still exists on some older models (migrate to `low`). `max` exists on GPT-5.6+ only.
+`reasoning.mode: "standard"|"pro"` on GPT-5.6 and GPT-6 (Responses only), independent of effort; replaces separate Pro slugs for 5.6+; no `gpt-6-*-pro` IDs. `reasoning.context` (5.6+): `auto` (= `all_turns`, default) · `all_turns` · `current_turn`; earlier models default `current_turn`; GPT-6.1 Sol supports `all_turns`, default not documented.
 Verbosity: `text.verbosity` = `low` `medium` `high`; documented on `gpt-6-astra`; Sol/Luna support (Verify).
 `reasoning_profile: light|balanced|deep` DOES NOT EXIST. It appeared in earlier editions of this KB and was retracted. Never emit it.
-Billing: >272K input bills 2× input **and cache** rates and 1.5× output for the entire request (GPT-6 and 5.6). Cache writes 1.25× input on GPT-5.6+ (GPT-5.5: no write charge); reads 0.1×. Batch/Flex 50%. Priority renamed **Fast mode** Jul 30 2026 (`service_tier:"fast"` or `"priority"`, 2× price).
+Billing: >272K input bills 2× input **and cache** rates and 1.5× output for the entire request (GPT-6 and 5.6). Cache writes 1.25× input on GPT-5.6+ (GPT-5.5: no write charge); reads 0.1× (GPT-6.1 Sol: 0.05×). Batch/Flex 50%. Priority renamed **Fast mode** Jul 30 2026 (`service_tier:"fast"` or `"priority"`, 2× price).
 Caching params: `prompt_cache_options.ttl:"30m"` (+ `mode:"explicit"`, `prompt_cache_breakpoint`) on 5.6+; `prompt_cache_retention` only ≤5.5.
-Surface: GPT-6 Astra function calling requires the Responses API; GPT-6 Sol/Luna function calling on Chat Completions only with `reasoning_effort:"none"`. GPT-6 adds `configuration_update` (mid-conversation effort change), async tool calling, mid-turn steering.
+Surface: GPT-6 Astra and GPT-6.1 Sol function calling requires the Responses API; GPT-6 Sol/Luna function calling on Chat Completions only with `reasoning_effort:"none"`. GPT-6 adds `configuration_update` (mid-conversation effort change), async tool calling, mid-turn steering.
 
 ## Google
 

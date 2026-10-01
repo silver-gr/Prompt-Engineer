@@ -1,6 +1,6 @@
 # GPT-5 & GPT-6 Practices (OpenAI, September 2026)
 
-This is the dedicated module for OpenAI GPT prompting guidance: the GPT-6 family (Astra, Sol, Luna) and the GPT-5.x generations that remain live (5.6, 5.5 and earlier).
+This is the dedicated module for OpenAI GPT prompting guidance: the GPT-6 family (Astra, 6.1 Sol, Sol, Luna) and the GPT-5.x generations that remain live (5.6, 5.5 and earlier).
 
 > **Model specs**: See 03-model-catalog_v5.md for GPT-6 and GPT-5 family data.
 > **Anti-patterns**: See 02-techniques-patterns_v5.md (canonical).
@@ -24,7 +24,7 @@ The **Responses API** is the current recommended surface for GPT-5.x and GPT-6 (
 | Effort | Latency | Use For |
 |--------|---------|---------|
 | `"minimal"` | Ultra-fast | Older models only (e.g. GPT-5 base) -- lowest reasoning tier there; migrate to `low` |
-| `"none"` | Ultra-fast | Zero reasoning overhead, trivial/simple tasks. **HTTP 400 on GPT-6 Astra** (use `low`) |
+| `"none"` | Ultra-fast | Zero reasoning overhead, trivial/simple tasks. **HTTP 400 on GPT-6 Astra** (use `low`); not supported on GPT-6.1 Sol |
 | `"low"` | Fast | Simple queries, lookups, formatting |
 | `"medium"` | Default | General tasks, standard reasoning |
 | `"high"` | Slower | Complex analysis, multi-step problems |
@@ -41,9 +41,10 @@ The **Responses API** is the current recommended surface for GPT-5.x and GPT-6 (
 | GPT-5.5 Pro | `medium` / `high` / `xhigh` | `high` |
 | GPT-5.6 Sol / Terra / Luna | `none` / `low` / `medium` / `high` / `xhigh` / `max` | `medium` |
 | GPT-6 Astra | `low` / `medium` / `high` / `xhigh` / `max` (`none` -> HTTP 400) | not documented |
+| GPT-6.1 Sol | `low` / `medium` / `high` / `xhigh` / `max` (no `none` or `minimal`) | `medium` |
 | GPT-6 Sol / Luna | `none` / `low` / `medium` / `high` / `xhigh` / `max` | `medium` |
 
-Passing `xhigh` or `none` to GPT-5 (base) (not re-verified this cycle — Verify), `none` to GPT-6 Astra, or `max` to anything below 5.6, is an error. Effort values do not transfer across models: preserve your current *effective* effort where supported, and sweep per model.
+Passing `xhigh` or `none` to GPT-5 (base) (not re-verified this cycle — Verify), `none` to GPT-6 Astra, `none` or `minimal` to GPT-6.1 Sol, or `max` to anything below 5.6, is an error. Effort values do not transfer across models: preserve your current *effective* effort where supported, and sweep per model.
 
 > **Parameter naming**: `reasoning.effort` is the **Responses API** spelling.
 > Chat Completions uses the flat `reasoning_effort`. Both surfaces are supported;
@@ -54,7 +55,7 @@ Passing `xhigh` or `none` to GPT-5 (base) (not re-verified this cycle — Verify
 | Knob | Governs |
 |------|---------|
 | `reasoning.mode` | `standard` (default) or `pro`; independent of effort; Pro bills aggregated tokens at standard rates |
-| `reasoning.context` | Which prior-turn reasoning is kept: `auto` (= `all_turns`, the default on 5.6+), `all_turns`, `current_turn` (default on earlier models) |
+| `reasoning.context` | Which prior-turn reasoning is kept: `auto` (= `all_turns`, the default on 5.6+), `all_turns`, `current_turn` (default on earlier models). GPT-6.1 Sol supports `all_turns`; its default is not documented |
 | `configuration_update` (GPT-6) | Input item that changes effort mid-conversation and keeps the cache prefix. No adjacent updates; incompatible with auto-compaction |
 | `prompt_cache_options.ttl` (5.6+) | `"30m"`; replaces `prompt_cache_retention`, which applies to 5.5 and earlier only |
 
@@ -68,7 +69,7 @@ Independent of reasoning effort, `text.verbosity` controls output length and det
 | `"medium"` | Default. General responses |
 | `"high"` | Detailed explanations, long-form writing |
 
-Documented on `gpt-6-astra`; support on GPT-6 Sol/Luna is not stated (Verify). GPT-5.6+ is more concise by default than 5.5, so a blunt "be concise" over-truncates: use `text.verbosity`, and say what a short answer must keep.
+Documented on `gpt-6-astra`; support on GPT-6 Sol/Luna is not stated (Verify); GPT-6.1 Sol uses it in an official example, default not documented. GPT-5.6+ is more concise by default than 5.5, so a blunt "be concise" over-truncates: use `text.verbosity`, and say what a short answer must keep.
 
 ### Implementation
 
@@ -229,24 +230,27 @@ Return the function with 3 test cases.
 - **GPT-6 order: Astra (top) > Sol (middle) > Luna (bottom).**
 - GPT-6 Sol/Luna are **successors to**, not the same models as, GPT-5.6 Sol/Luna (different IDs, prices, cutoffs and parameter rules).
 - **"Sol" names a different tier per generation.** In GPT-5.6 Sol is the flagship (about the unsuffixed tier; Terra ~ mini, Luna ~ nano). In GPT-6, Astra is the flagship and Sol is the middle tier.
+- **GPT-6.1 Sol** (Sep 29 2026) is the recommended Sol; there is no GPT-6.1 Astra or GPT-6.1 Luna, and `gpt-6-sol` stays live (no deprecation notice).
 - **Terra has no GPT-6 successor**, and Astra is not a renamed Terra. All GPT-5.6 models (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`) remain live, with no deprecation notice.
 
-### GPT-6 (Astra, Sol, Luna)
+### GPT-6 (Astra, 6.1 Sol, Sol, Luna)
 
 | Tier | ID | Released | $ in / cached / out per 1M | Positioning |
 |------|----|----------|----------------------------|-------------|
 | Astra | `gpt-6-astra` | Sep 3 2026 | $10 / $1.00 / $50 | Hardest end-to-end work: ambiguous problems, deep analysis, ambitious deliverables |
-| Sol | `gpt-6-sol` | Sep 22 2026 | $2 / $0.20 / $10 | Everyday driver: writing, coding, work that needs judgment |
+| 6.1 Sol | `gpt-6.1-sol` | Sep 29 2026 | $2 / $0.10 / $10 | Complex coding, computer use and professional work at near-Astra quality and lower cost |
+| Sol | `gpt-6-sol` | Sep 22 2026 | $2 / $0.20 / $10 | Everyday driver: writing, coding, work that needs judgment (superseded by 6.1 Sol) |
 | Luna | `gpt-6-luna` | Sep 22 2026 | $0.10 / $0.01 / $0.50 | Scoped, high-volume tasks: triage, frequent automations |
 
-All three: 1,050,000-token context, 128,000 max output. Choose the tier by representative evals rather than routing everything to the most capable model, and preserve the workload role when migrating.
+All four: 1,050,000-token context, 128,000 max output. Choose the tier by representative evals rather than routing everything to the most capable model, and preserve the workload role when migrating.
 
 **API rules**:
 - Astra: `reasoning.effort: "none"` returns HTTP 400 (migrate `none` to `low`); function calling requires the Responses API.
+- 6.1 Sol: no `none` or `minimal` effort (error code not documented); function calling requires the Responses API. Because effort is never `none`, always remove the sampling params below.
 - Sol/Luna: function calling on Chat Completions only with `reasoning_effort: "none"`; use Responses for reasoning with tools.
 - Remove `temperature`, `top_p`, `top_logprobs`, `logprobs` when effort is not `none` (error vs ignored: Verify).
 - New: async tool calling (`async: true`, result returned later by `call_id`), mid-turn steering over WebSocket, `configuration_update`, misalignment monitoring (can return `403 misalignment_policy_violation`: stop dispatching, do not auto-retry).
-- There is no separate Sol/Luna prompting guide; the official guidance addresses behavior observed on Astra. Guidance that helps Sol/Luna may over-constrain Astra, so evaluate per model and audit repo skills and AGENTS.md.
+- There is no separate 6.1 Sol, Sol or Luna prompting guide; the official guidance addresses behavior observed on Astra. Guidance that helps Sol/Luna may over-constrain Astra, so evaluate per model and audit repo skills and AGENTS.md.
 
 **Five Astra behaviors and remedies**:
 
@@ -257,6 +261,8 @@ All three: 1,050,000-token context, 128,000 max output. Choose the tier by repre
 | **Writing style**: heavy Markdown, recurring phrases across sessions | Specify the style (plain paragraphs, lists only for parallel or sequential info). Blocklist: "delve", "foster", "leverage", "it's worth noting", "importantly", "genuinely", "Bottom Line:", "In short:", contrastive "X, not Y" framing |
 | **Delegation**: under-delegates | Say when and how much to delegate (e.g. "if it could save time or improve quality") |
 | **Testing**: over-tests small tasks | Calibrate: no tests for reversible, low-impact changes that mirror the implementation; broaden only when changes, failures or open concerns justify it |
+
+**Migration from GPT-6 Sol to GPT-6.1 Sol** (official): move `none` and `minimal` to `low` and compare results on representative tasks; otherwise preserve the current effective effort. Move tool calls from Chat Completions to Responses. No 6.1 Sol-specific prompt changes are documented; re-run evals.
 
 **Migration from GPT-5.5/5.6**: replace `prompt_cache_retention` with `prompt_cache_options.ttl: "30m"`; drop `none` on Astra; audit "ask first / wait for approval" language written for older, over-eager models -- Astra can take it too seriously and stall.
 
@@ -282,7 +288,7 @@ GPT-5.5 (`gpt-5.5`, $5 / $0.50 / $30) and `gpt-5.5-pro` remain live in the API. 
 | Scenario | Use |
 |----------|-----|
 | Hardest reasoning, ambiguous or ambitious work | GPT-6 Astra |
-| Everyday coding, writing, judgment work | GPT-6 Sol |
+| Complex coding, computer use, professional work at lower cost than Astra | GPT-6.1 Sol |
 | High-volume, cost-sensitive, scoped tasks | GPT-6 Luna |
 | Existing GPT-5.6 integrations | Keep on GPT-5.6 until evals justify moving; mid-tier is Terra (no GPT-6 successor) |
 | Previous-generation frontier | GPT-5.5 (`reasoning.effort: "high"`/`"xhigh"`) |
@@ -331,7 +337,7 @@ DO:
 - System messages for role and constraints
 - Specify language and success criteria for code
 - Add persistence reminders, or `<tool_persistence_rules>`, for agentic tasks; for Astra add an initiative line and a completion definition
-- Never send `reasoning.effort: none` to GPT-6 Astra; never use `reasoning_profile` (does not exist)
+- Never send `reasoning.effort: none` to GPT-6 Astra or GPT-6.1 Sol; never use `reasoning_profile` (does not exist)
 - Remove sampling params (`temperature`, `top_p`) on GPT-6
 - Use the agentic contract tag set (Section 10) for tool-heavy tasks
 

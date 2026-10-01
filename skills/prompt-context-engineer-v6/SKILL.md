@@ -71,7 +71,7 @@ These are **API-breaking**, not stylistic. Getting one wrong returns an error or
 | Claude Fable 5.1, Opus 5.5, Sonnet 5.5 | forced `tool_choice` (`any`/`tool`); replayed thinking after editing `system`, `tools`, or earlier turns | **400** (history edits: newer accounts) | — |
 | Claude Haiku 4.5 | — exempt from every row above; keeps prefill, `budget_tokens`, sampling params | — | manual budget |
 | Gemini 3.x | `temperature`/`top_p`/`top_k`; `thinking_budget` with `thinking_level`; a prefilled model turn (3.6+); `thinking_level: minimal` (3.7+); `candidate_count`/penalties (3.8) | sampling ignored on 3.6+, loops on older 3.x, 400 on future generations; the rest **400** or error | `thinking_level`, on |
-| GPT-6 Astra | `reasoning.effort: none`; function calling via Chat Completions | **400**; unsupported — use Responses | reasoning effort, per-model enum |
+| GPT-6 Astra, GPT-6.1 Sol | `reasoning.effort: none` (6.1 Sol: also `minimal`); function calling via Chat Completions | **400** on Astra (6.1 Sol: unsupported, code not documented); unsupported — use Responses | reasoning effort, per-model enum |
 | GPT-5.x, GPT-6 | assuming a shared effort enum across versions; sampling params with effort ≠ `none` | invalid value; remove (error vs ignore: Verify) | reasoning effort, per-model enum |
 
 Two facts that are widely misstated — carry the scoped version:

@@ -40,7 +40,7 @@ Reasoning depth and output length are two **independent** parameters, set in the
 | `reasoning.effort` | how much the model reasons before answering | Responses API (recommended for new integrations) | references/specs-current.md |
 | `reasoning_effort` | same thing, flat spelling | Chat Completions (supported, not deprecated) | references/specs-current.md |
 | `reasoning.mode` | `standard` / `pro`; independent of effort | Responses API only | references/specs-current.md |
-| `reasoning.context` | which prior-turn reasoning is kept; `all_turns` is the default on 5.6+ | Responses API | references/specs-current.md |
+| `reasoning.context` | which prior-turn reasoning is kept; `all_turns` is the default on 5.6+ (6.1 Sol: default not documented) | Responses API | references/specs-current.md |
 | `text.verbosity` | length and detail of the final answer, independent of effort | Responses API | references/specs-current.md |
 
 **The effort enum is per-model and does not transfer.** Tiers exist on some models and not others; passing a tier the target model does not support is a hard error, not a downgrade. Never port an effort value across models — confirm it against the roster in references/specs-current.md for the exact model you are calling.
@@ -87,7 +87,7 @@ Search strategy inside `<research_mode>`: one broad pass first, targeted follow-
 
 ## GPT-6 Astra behavior
 
-Observed on Astra; evaluate on GPT-6 Sol/Luna (no separate Sol/Luna guide exists). Guidance that helps Sol/Luna may over-constrain Astra.
+Observed on Astra; evaluate on GPT-6.1 Sol, GPT-6 Sol and Luna (no separate guide exists for them). Guidance that helps Sol/Luna may over-constrain Astra.
 
 | Behavior | Remedy |
 |---|---|
@@ -97,7 +97,7 @@ Observed on Astra; evaluate on GPT-6 Sol/Luna (no separate Sol/Luna guide exists
 | Delegation: under-delegates | Say when and how much to delegate. |
 | Testing: over-tests | Calibrate testing down — official line in `tasks-code.md`. |
 
-Sampling: remove `temperature`, `top_p`, `top_logprobs`, `logprobs` on GPT-6 when effort is not `none` (whether they error or are ignored: Verify). `reasoning.effort: none` returns 400 on Astra.
+Sampling: remove `temperature`, `top_p`, `top_logprobs`, `logprobs` on GPT-6 when effort is not `none` (whether they error or are ignored: Verify). `reasoning.effort: none` returns 400 on Astra; GPT-6.1 Sol has no `none`, so remove sampling params on every call.
 
 Evidence for AP-9: OpenAI internal runs show leaner prompts gave +10-15% eval score, -41-66% tokens, -33-67% cost (directional).
 
@@ -141,5 +141,5 @@ DON'T: Prescribe algorithms, variable names, or code structure.
 DON'T: Use a blunt "be concise" in place of the verbosity knob.
 DON'T: Reuse an effort value across models — the enum is per-model and errors when unsupported.
 DON'T: Reference reasoning_profile. It does not exist.
-DON'T: Send `reasoning.effort: none` to GPT-6 Astra.
+DON'T: Send `reasoning.effort: none` to GPT-6 Astra or GPT-6.1 Sol.
 ```
